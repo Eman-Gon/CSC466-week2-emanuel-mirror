@@ -1,13 +1,15 @@
 
+from typing import List
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import OneHotEncoder
 
 MONTH_ORDER = [
     "Frostmere", "Emberfall", "Lunaris", "Verdantia", "Solstice",
     "Duskveil", "Starshade", "Aurorath", "Mysthaven", "Eclipsion"
 ]
-# come back to this
+
 MONTH_TO_INDEX = {m: i for i, m in enumerate(MONTH_ORDER)}
 
 def mystical_to_ordinal(year: int, month: str, day: int) -> int:
@@ -23,7 +25,7 @@ def find_top_publisher() -> str:
     return top_publisher['publisher_id']
     
 
-def choose_three_adventurers():
+def choose_three_adventurers() -> List[str]:
     """Returns a list of three adventurers. This function picks adventurers subscribed to the publisher with the most content."""
 
     # Read parquet files
@@ -63,18 +65,21 @@ def choose_three_adventurers():
     )
     return most_viewed_active['adventurer_id']
 
-def recommend_content(adventurer_id):
+def recommend_content(adventurer_id : str) -> List[str]:
     """Returns a list of content_ids for recommended content."""
+
     # Read parquet files
     content_metadata = pd.read_parquet('content_metadata.parquet')
     content_views = pd.read_parquet('content_views.parquet')
     adventurers = pd.read_parquet('adventurer_metadata.parquet')
 
+    
+
     # Add more columns (avg age and gender ratio)
     views = content_views.merge(adventurers[['adventurer_id','age','gender']], on='adventurer_id', how='left')
     demographics = views.groupby('content_id').agg(
         avg_age=('age','mean'),
-        gender_ratio=('gender', lambda x: (x=='M').mean())
+        gender_ratio=('gender', lambda x: ((x == 'M')*1 + (x == 'NB')*0.5).mean())
     ).reset_index()
     content_metadata = pd.merge(content_metadata, demographics, on='content_id', how='left')
 
@@ -84,32 +89,37 @@ def recommend_content(adventurer_id):
     
     viewed_content['watch_percentage'] = (viewed_content['seconds_viewed'] / (viewed_content['minutes'] * 60)).clip(0,1)
 
-    unseen_content = content_metadata.loc[(~content_metadata['content_id'].isin(viewed_content))].copy()
+    unseen_content = content_metadata.loc[(~content_metadata['content_id'].isin(viewed_content['content_id']))].copy()
+
+    viewed_content = viewed_content[viewed_content['watch_percentage'] > 0.5]
+
+    # Filter out content not within their primary language
+    cur_adv = adventurers.loc[adventurers['adventurer_id'] == adventurer_id]
+    unseen_content = unseen_content[unseen_content['language_code'] == cur_adv.iloc[0]['primary_language']]
     
-    # Turn categorical columns to numerical columns
-    numeric_cols = ['avg_age','gender_ratio'] 
-    categorical_features = ['genre_id', 'language_code', 'studio']
-    for col in categorical_features:
-        content_metadata[col] = content_metadata[col].astype('category').cat.codes
-        viewed_content[col] = viewed_content[col].astype('category').cat.codes
-        unseen_content[col] = unseen_content[col].astype('category').cat.codes
-        numeric_cols.append(col)
+    # Categorical columns -> numerical columns
+    numeric_features = ['avg_age','gender_ratio'] 
+    categorical_features = ['genre_id']
+    
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+    encoder.fit(pd.concat([viewed_content[categorical_features], unseen_content[categorical_features]]).astype(str))
 
+    viewed_cat = encoder.transform(viewed_content[categorical_features].astype(str))
+    unseen_cat = encoder.transform(unseen_content[categorical_features].astype(str))
 
-    X_train = viewed_content[numeric_cols].fillna(0).multiply(viewed_content['watch_percentage'], axis=0).to_numpy()
-    X_test = unseen_content[numeric_cols].fillna(0).to_numpy()
+    X_train = np.hstack([viewed_content[numeric_features].fillna(0).to_numpy(), viewed_cat])
+    X_test  = np.hstack([unseen_content[numeric_features].fillna(0).to_numpy(), unseen_cat])
 
     neigh = NearestNeighbors(n_neighbors=2, metric='euclidean')
     neigh.fit(X_train)
 
     distances, indices = neigh.kneighbors(X_test)
 
+    # Get top 2 content
     top_indices = np.argsort(distances.mean(axis=1))[:2]  
     recommended_content = unseen_content.iloc[top_indices]['content_id'].tolist()
 
     return recommended_content
-
-
 
 
 if __name__ == "__main__":
