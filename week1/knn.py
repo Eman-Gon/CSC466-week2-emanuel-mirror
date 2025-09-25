@@ -19,7 +19,7 @@ def mystical_to_ordinal(year: int, month: str, day: int) -> int:
 
 def find_top_publisher() -> str:
     """Returns the publisher with the most amount of content."""
-    content_views = pd.read_parquet('content_views.parquet')
+    content_views = pd.read_parquet('./week1/content_views.parquet')
     counts = content_views.groupby("publisher_id")["content_id"].nunique().reset_index(name="content_count") 
     top_publisher = counts.loc[counts["content_count"].idxmax()]
     return top_publisher['publisher_id']
@@ -29,9 +29,9 @@ def choose_three_adventurers() -> List[str]:
     """Returns a list of three adventurers. This function picks adventurers subscribed to the publisher with the most content."""
 
     # Read parquet files
-    subscriptions = pd.read_parquet('subscriptions.parquet')
-    cancellations = pd.read_parquet('cancellations.parquet')
-    content_views = pd.read_parquet('content_views.parquet')
+    subscriptions = pd.read_parquet('./week1/subscriptions.parquet')
+    cancellations = pd.read_parquet('./week1/cancellations.parquet')
+    content_views = pd.read_parquet('./week1/content_views.parquet')
 
     subscriptions["ordinal"] = subscriptions.apply(
         lambda r: mystical_to_ordinal(r["year"], r["month"], r["day_of_month"]),
@@ -69,9 +69,9 @@ def recommend_content(adventurer_id : str) -> List[str]:
     """Returns a list of content_ids for recommended content."""
 
     # Read parquet files
-    content_metadata = pd.read_parquet('content_metadata.parquet')
-    content_views = pd.read_parquet('content_views.parquet')
-    adventurers = pd.read_parquet('adventurer_metadata.parquet')
+    content_metadata = pd.read_parquet('./week1/content_metadata.parquet')
+    content_views = pd.read_parquet('./week1/content_views.parquet')
+    adventurers = pd.read_parquet('./week1/adventurer_metadata.parquet')
 
     
 
@@ -125,7 +125,7 @@ def recommend_content(adventurer_id : str) -> List[str]:
 if __name__ == "__main__":
     three_adventurers = choose_three_adventurers()
 
-    with open("eval.csv", "w") as f:
+    with open("./week1/eval.csv", "w") as f:
         print("adventurer_id,rec1,rec2")
         f.write("adventurer_id,rec1,rec2\n")
         for adv in three_adventurers:

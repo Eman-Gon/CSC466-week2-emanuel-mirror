@@ -7,9 +7,9 @@ import csv
 
 
 if __name__ == "__main__":
-    content_views = pd.read_parquet('content_views.parquet')
-    content_metadata = pd.read_parquet('content_metadata.parquet')
-    adventurers = pd.read_parquet('adventurer_metadata.parquet')
+    content_views = pd.read_parquet('./week1/content_views.parquet')
+    content_metadata = pd.read_parquet('./week1/content_metadata.parquet')
+    adventurers = pd.read_parquet('./week1/adventurer_metadata.parquet')
 
     views_with_demo = content_views.merge(
         adventurers[['adventurer_id', 'age', 'gender']], 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     content_metadata = content_metadata.merge(agg_demo, on='content_id', how='left')
 
-    with open('eval.csv', 'r', newline='') as csvfile:
+    with open('week1/eval.csv', 'r', newline='') as csvfile:
         csvreader = csv.reader(csvfile)
 
         header = next(csvreader)
