@@ -29,9 +29,9 @@ def choose_three_adventurers() -> List[str]:
     """Returns a list of three adventurers. This function picks adventurers subscribed to the publisher with the most content."""
 
     # Read parquet files
-    subscriptions = pd.read_parquet('./week1/subscriptions.parquet')
-    cancellations = pd.read_parquet('./week1/cancellations.parquet')
-    content_views = pd.read_parquet('./week1/content_views.parquet')
+    subscriptions = pd.read_parquet('./week2/subscriptions.parquet')
+    cancellations = pd.read_parquet('./week2/cancellations.parquet')
+    content_views = pd.read_parquet('./week2/content_views.parquet')
 
     subscriptions["ordinal"] = subscriptions.apply(
         lambda r: mystical_to_ordinal(r["year"], r["month"], r["day_of_month"]),
@@ -69,14 +69,16 @@ def recommend_content(adventurer_id : str) -> List[str]:
     """Returns a list of content_ids for recommended content."""
 
     # Read parquet files
-    content_metadata = pd.read_parquet('./week1/content_metadata.parquet')
-    content_views = pd.read_parquet('./week1/content_views.parquet')
-    adventurers = pd.read_parquet('./week1/adventurer_metadata.parquet')
+    content_metadata = pd.read_parquet('./week2/content_metadata.parquet')
+    content_views = pd.read_parquet('./week2/content_views.parquet')
+    adventurers = pd.read_parquet('./week2/adventurer_metadata.parquet')
 
-    
+    # cut out 20%
+    content_views_train = content_views.iloc[0:int((len(content_views)*0.8))]
+    content_views_test = content_views.drop(content_views_train.index)
 
     # Add more columns (avg age and gender ratio)
-    views = content_views.merge(adventurers[['adventurer_id','age','gender']], on='adventurer_id', how='left')
+    views = content_views_train.merge(adventurers[['adventurer_id','age','gender']], on='adventurer_id', how='left')
     demographics = views.groupby('content_id').agg(
         avg_age=('age','mean'),
         gender_ratio=('gender', lambda x: ((x == 'M')*1 + (x == 'NB')*0.5).mean())
@@ -84,18 +86,30 @@ def recommend_content(adventurer_id : str) -> List[str]:
     content_metadata = pd.merge(content_metadata, demographics, on='content_id', how='left')
 
     # Get unseen content
-    adventurer_views = content_views.loc[content_views['adventurer_id'] == adventurer_id]
+    adventurer_views = content_views_train.loc[content_views_train['adventurer_id'] == adventurer_id]
     viewed_content = pd.merge(adventurer_views, content_metadata, on=['content_id'],how='left')
     
     viewed_content['watch_percentage'] = (viewed_content['seconds_viewed'] / (viewed_content['minutes'] * 60)).clip(0,1)
 
     unseen_content = content_metadata.loc[(~content_metadata['content_id'].isin(viewed_content['content_id']))].copy()
 
-    viewed_content = viewed_content[viewed_content['watch_percentage'] > 0.5]
+    viewed_content_maj = viewed_content[viewed_content['watch_percentage'] > 0.5]
+    if (len(viewed_content_maj) > 2):
+        viewed_content = viewed_content_maj
+    
 
     # Filter out content not within their primary language
     cur_adv = adventurers.loc[adventurers['adventurer_id'] == adventurer_id]
     unseen_content = unseen_content[unseen_content['language_code'] == cur_adv.iloc[0]['primary_language']]
+
+    # only allow things in 20%
+    print("length of unseen before cutting: " + str(len(unseen_content)))
+    content_views_test = content_views_test.loc[content_views_test['adventurer_id'] == adventurer_id]
+    print(content_views_test)
+    #unseen_content = unseen_content.loc[unseen_content['content_id'].isin(content_views_test['content_id'])].copy()
+    content_views_test = content_views_test.merge(content_metadata, on=["content_id"], how="left")
+    unseen_content = content_views_test
+    print(len(unseen_content))
     
     # Categorical columns -> numerical columns
     numeric_features = ['avg_age','gender_ratio'] 
@@ -116,8 +130,8 @@ def recommend_content(adventurer_id : str) -> List[str]:
     distances, indices = neigh.kneighbors(X_test)
 
     # Get top 2 content
-    top_indices = np.argsort(distances.mean(axis=1))[:2]  
-    recommended_content = unseen_content.iloc[top_indices]['content_id'].tolist()
+    top_indices = np.argsort(distances.mean(axis=1)) 
+    recommended_content = unseen_content.iloc[top_indices]['content_id'].drop_duplicates().tolist()
 
     return recommended_content
 
@@ -125,7 +139,7 @@ def recommend_content(adventurer_id : str) -> List[str]:
 if __name__ == "__main__":
     three_adventurers = choose_three_adventurers()
 
-    with open("./week1/eval.csv", "w") as f:
+    with open("./week2/hahns-eval.csv", "w") as f:
         print("adventurer_id,rec1,rec2")
         f.write("adventurer_id,rec1,rec2\n")
         for adv in three_adventurers:
