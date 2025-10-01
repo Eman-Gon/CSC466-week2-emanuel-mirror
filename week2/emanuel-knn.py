@@ -3,15 +3,12 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from pathlib import Path
 
-# ---------- Paths (robust: works from root or from week2/) ----------
-ROOT = Path(__file__).resolve().parent  # points to .../week2
+ROOT = Path(__file__).resolve().parent 
 P = lambda name: ROOT / name
 
-# ---------- Load Week 2 data ----------
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_subs  = pd.read_parquet(P("subscriptions.parquet"))
 
-# Choose publisher with most unique subscribers
 pub_counts = df_subs.groupby("publisher_id")["adventurer_id"].nunique()
 publisher_id = pub_counts.idxmax()
 print(f"Publisher chosen: {publisher_id}")
@@ -25,7 +22,7 @@ views_pub = df_views[
     & (df_views["adventurer_id"].isin(sub_ids))
 ].copy()
 
-# ---------- 80/20 split per user ----------
+# 80/20 split per user
 def create_train_test_split(df: pd.DataFrame):
     """Split each user's rows into 80% train / 20% test (by content_id order)."""
     train_list, test_list = [], []
@@ -36,17 +33,17 @@ def create_train_test_split(df: pd.DataFrame):
             train_list.append(user_data.iloc[:n_train])
             test_list.append(user_data.iloc[n_train:])
         else:
-            # too few rows: use all in train
+            #train listed
             train_list.append(user_data)
     train_df = pd.concat(train_list, ignore_index=True)
     test_df = pd.concat(test_list, ignore_index=True) if test_list else pd.DataFrame(columns=df.columns)
     return train_df, test_df
 
-# Split the data
+# Split data
 train_views, test_views = create_train_test_split(views_pub)
 print(f"Train: {len(train_views)} rows, Test: {len(test_views)} rows")
 
-# ---------- Build user-item matrix on TRAINING DATA ONLY ----------
+# matrix on train data
 train_views = train_views.copy()
 train_views["value"] = 1
 user_item = (
@@ -63,7 +60,7 @@ n_neighbors = min(20, len(item_user))
 knn = NearestNeighbors(metric="cosine", algorithm="brute", n_neighbors=n_neighbors)
 knn.fit(item_user.values)
 
-item_matrix = item_user.values  # shape: (n_items, n_users)
+item_matrix = item_user.values 
 
 def recommend2(uid: str) -> list[str]:
     """Recommend 2 unseen items for a user using item-item cosine KNN."""
@@ -74,7 +71,7 @@ def recommend2(uid: str) -> list[str]:
         return []
     # Get neighbors for each seen item
     dists, idxs = knn.kneighbors(item_matrix[seen_idx], return_distance=True)
-    scores = np.zeros(user_item.shape[1], dtype=np.float32)  # one score per item
+    scores = np.zeros(user_item.shape[1], dtype=np.float32) 
     for drow, irow in zip(dists, idxs):
         sims = 1.0 - drow
         np.add.at(scores, irow, sims)
@@ -84,7 +81,6 @@ def recommend2(uid: str) -> list[str]:
     top = np.argsort(-scores)[:2]
     return [user_item.columns[i] for i in top if np.isfinite(scores[i])]
 
-# ---------- Pick 9 active users and write CSV ----------
 user_activity = user_item.sum(axis=1).sort_values(ascending=False).index.tolist()
 
 rows = []

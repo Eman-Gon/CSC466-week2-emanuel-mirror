@@ -6,11 +6,10 @@ import matplotlib.pyplot as plt
 import csv
 from pathlib import Path
 
-# ---------- Paths (robust: works from root or inside week2/) ----------
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-# ---------- Load data ----------
+# load data
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_subs  = pd.read_parquet(P("subscriptions.parquet"))
 
@@ -25,7 +24,7 @@ views_pub = df_views[
     (df_views["adventurer_id"].isin(sub_ids))
 ].copy()
 
-# ---------- Split data per user ----------
+# split data
 def create_splits(df):
     train_list, test_list = [], []
     for uid in df['adventurer_id'].unique():
@@ -40,7 +39,7 @@ def create_splits(df):
 
 train_views, test_views = create_splits(views_pub)
 
-# ---------- Build KNN model ----------
+# knn
 train_views["value"] = 1
 user_item = (
     train_views.groupby(["adventurer_id", "content_id"])["value"]
@@ -70,7 +69,7 @@ def score_item(uid, item_id):
         return 0.0
     return sims[overlap].mean()
 
-# ---------- Evaluate on 9 users ----------
+# evalute 
 with open(P("emanuel-eval.csv"), "r") as f:
     reader = csv.DictReader(f)
     eval_users = [row['adventurer_id'] for row in reader]
@@ -100,7 +99,7 @@ for uid in eval_users:
             y_true.append(0)
             y_scores.append(score)
 
-# ---------- Metrics ----------
+# metrics
 fpr, tpr, _ = roc_curve(y_true, y_scores)
 roc_auc = auc(fpr, tpr)
 
@@ -122,7 +121,7 @@ print(f"ROC-AUC: {roc_auc:.3f}")
 print(f"PR-AUC: {pr_auc:.3f}")
 print(f"Best F1: {best_f1:.3f} at threshold {best_thresh:.2f}")
 
-# ---------- Plots ----------
+# plots
 plt.figure(figsize=(15, 4))
 
 plt.subplot(1, 3, 1)
