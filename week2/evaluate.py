@@ -34,13 +34,14 @@ def get_y(rows, threshold):
 
         # actual labels
         test_content['top_half_actual'] = 0
-        n = int(len(test_content) * threshold)
-        test_content.loc[test_content.index[:n], 'top_half_actual'] = 1
+        #n = int(len(test_content) * threshold)
+        test_content.loc[test_content['watch_percentage'] >= 0.5,'top_half_actual'] = 1
 
         # predicted labels
         test_content['top_half_pred'] = 0
-        top_half_rec_cont = content[:int(len(content) * 0.5)]
+        top_half_rec_cont = content[:int(len(content) * threshold)]
         test_content.loc[test_content['content_id'].isin(top_half_rec_cont), 'top_half_pred'] = 1
+        #print(test_content)
 
 
         #print(test_content[['content_id','watch_percentage','top_half_actual','top_half_pred']])
@@ -64,38 +65,25 @@ if __name__ == "__main__":
         header = next(csvreader)
         print(f"Header: {header}")
 
-        y_actual = []
-        y_pred = []
-
         rows = []
         for i, row in enumerate(csvreader):
-            print(row)
+            #print(row)
             rows.append(row)
         
-        test_thresholds = np.linspace(0.9,0.1,9)
-        print(test_thresholds)
-        for t in test_thresholds:
-            print(get_y(rows, t))
-            
-           
-
-
-           
-
-    
-             
-
+        test_thresholds = np.round(np.linspace(0.1, 0.9, 9), 2)
         
+        #print(test_thresholds)
+        f1_scores = []
+        optimized_threshold = -1
+        for t in test_thresholds:
+            _, _,f1 = get_y(rows, t)
+            f1_scores.append(f1)
+        highest_f1 = max(f1_scores)
+        optimized_threshold = test_thresholds[f1_scores.index(highest_f1)]
+        print(f"Optimized threshold {optimized_threshold}: \tF1 Score: {highest_f1}")
 
+        y_actual, y_pred, _ = get_y(rows, optimized_threshold)
 
-"""
-        print(y_actual)
-        print(y_pred)
-        print(y_scores)
-
-        # -- F1 Score --
-        f1_binary = f1_score(y_actual, y_pred, average="binary")
-        print(f"F1 Score = {f1_binary}")
         
         # -- ROC-AUC --
         fpr, tpr, _ = roc_curve(y_actual, y_pred)
@@ -107,44 +95,44 @@ if __name__ == "__main__":
         pr_auc = auc(recall, precision)
         print(f"PR-AUC = {pr_auc}")
 
-        # -- Plot -- 
+     
         plt.figure(figsize=(12,5))
 
-        # Plot ROC
-        
-        plt.subplot(1,2,1)
+        plt.figure(figsize=(18,5))
+
+        # --- ROC Curve ---
+        plt.subplot(1,3,1)
         plt.plot(fpr, tpr, label=f'ROC curve (AUC = {roc_auc:.2f})')
-        plt.plot([0,1], [0,1], linestyle='--', color='gray') 
+        plt.plot([0,1], [0,1], linestyle='--', color='gray')  # random baseline
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title('ROC Curve')
         plt.legend()
+        plt.grid(True)
 
-        # Plot PR
-        plt.subplot(1,2,2)
-        plt.plot(recall, precision, label=f'PR curve (AUC = {pr_auc:.2f})')
+        # --- Precision-Recall Curve ---
+        plt.subplot(1,3,2)
+        plt.plot(recall, precision, label=f'PR curve (AUC = {pr_auc:.2f})', color='green')
         plt.xlabel('Recall')
         plt.ylabel('Precision')
         plt.title('Precision-Recall Curve')
         plt.legend()
+        plt.grid(True)
+
+        # --- F1 vs Threshold ---
+        plt.subplot(1,3,3)
+        plt.plot(test_thresholds, f1_scores, marker='o', linestyle='-', color='blue')
+        plt.xlabel('Threshold')
+        plt.ylabel('F1 Score')
+        plt.title('F1 Score vs Threshold')
+        plt.xticks(test_thresholds)
+        plt.grid(True)
 
         plt.tight_layout()
         plt.show()
-
-        # F1 Threshold
-   
-            
-
-
-
-
-
-
-
-
-         
+        
         print()
-        """
+  
             
         
         
