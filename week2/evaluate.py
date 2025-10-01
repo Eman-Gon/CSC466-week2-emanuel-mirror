@@ -19,9 +19,6 @@ def get_y(rows, threshold):
         adv = row[0]
         content = row[1:]
 
-        #print(f"Adventurer {i + 1}: {adv}")
-        #print(adventurers.loc[adventurers['adventurer_id'] == adv])
-
         content_views_train = content_views.iloc[0:int((len(content_views)*0.8))]
         content_views_test = content_views.drop(content_views_train.index)
         
@@ -52,14 +49,9 @@ def get_y(rows, threshold):
 
     return y_actual, y_pred,f1
 
-
-
-
-
-if __name__ == "__main__":
-
-
-    with open('week2/hahns-eval.csv', 'r', newline='') as csvfile:
+    
+def evaluate(path):
+    with open(path, 'r', newline='') as csvfile:
         csvreader = csv.reader(csvfile)
 
         header = next(csvreader)
@@ -95,8 +87,6 @@ if __name__ == "__main__":
         pr_auc = auc(recall, precision)
         print(f"PR-AUC = {pr_auc}")
 
-     
-        plt.figure(figsize=(12,5))
 
         plt.figure(figsize=(18,5))
 
@@ -130,8 +120,14 @@ if __name__ == "__main__":
 
         plt.tight_layout()
         plt.show()
-        
+
         print()
+
+
+
+if __name__ == "__main__":
+    evaluate('week2/hahns-eval.csv')
+    
   
             
         
