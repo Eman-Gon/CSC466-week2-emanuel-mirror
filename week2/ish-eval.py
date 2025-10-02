@@ -2,10 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    roc_curve, precision_recall_curve,
-    roc_auc_score, auc, f1_score
-)
+from sklearn.metrics import (roc_curve, precision_recall_curve,roc_auc_score, auc, f1_score)
 import matplotlib.pyplot as plt
 
 
@@ -14,7 +11,6 @@ df_subscriptions = pd.read_parquet("./week2/subscriptions.parquet", engine="pyar
 df_cancellations = pd.read_parquet("./week2/cancellations.parquet", engine="pyarrow")
 
 df_content_views = df_content_views.dropna(subset=['rating'])
-
 df_content_views = df_content_views.drop_duplicates(['adventurer_id', 'content_id'])
 
 train, test = train_test_split(df_content_views, test_size=0.2, random_state=42)
@@ -34,7 +30,7 @@ def recommend(item_id, user_id, k=10):
     dists, indices = knn_model.kneighbors([item.values], n_neighbors=k)
 
     candidates = list(df_matrix_centered.index[indices[0]])
-    candidates = [c for c in candidates if c != item_id]  #drop content i used
+    candidates = [c for c in candidates if c != item_id]  #drop content used
     watched = set(train[train["adventurer_id"] == user_id]["content_id"])
     recs = [c for c in candidates if c not in watched]
 
@@ -96,8 +92,9 @@ def evaluate_with_curves(k=10, n_samples=200):
     for thresh in test_thresholds:
         preds = (y_pred >= thresh).astype(int)
         f1_scores.append(f1_score(y_actual, preds))
+    
 
-    # --- Plotting ---
+
     plt.figure(figsize=(18, 5))
 
     # ROC Curve
@@ -110,7 +107,7 @@ def evaluate_with_curves(k=10, n_samples=200):
     plt.legend()
     plt.grid(True)
 
-    # Precision-Recall Curve
+    # PR Curve
     plt.subplot(1, 3, 2)
     plt.plot(recall, precision, label=f'PR curve (AUC = {pr_auc:.2f})', color='green')
     plt.xlabel('Recall')
@@ -133,6 +130,5 @@ def evaluate_with_curves(k=10, n_samples=200):
     plt.show()
 
     return roc_auc, pr_auc, f1_scores, test_thresholds
-
 
 roc_auc, pr_auc, f1_scores, test_thresholds = evaluate_with_curves(k=10, n_samples=500)
