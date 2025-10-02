@@ -129,6 +129,7 @@ def evaluate_with_curves(k=10, n_samples=200):
     plt.grid(True)
 
     plt.tight_layout()
+    plt.savefig("ishwarya_evaluation.png")
     plt.show()
 
     return roc_auc, pr_auc, f1_scores, test_thresholds
