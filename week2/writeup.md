@@ -1,1 +1,1 @@
-![Hahn's graph]['./week2/hahns-evaluation.png']
+![Hahn's metrics](./week2/hahns-evaluation.png)
