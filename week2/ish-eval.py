@@ -133,7 +133,5 @@ def evaluate_with_curves(k=10, n_samples=200):
 
     return roc_auc, pr_auc, f1_scores, test_thresholds
 
-# --------------------------
-# Run evaluation
-# --------------------------
+
 roc_auc, pr_auc, f1_scores, test_thresholds = evaluate_with_curves(k=10, n_samples=500)
