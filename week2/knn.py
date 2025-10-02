@@ -65,7 +65,7 @@ def choose_nine_adventurers() -> List[str]:
     )
     return most_viewed_active['adventurer_id']
 
-def recommend_content(adventurer_id : str) -> List[str]:
+def recommend_content(adventurer_id : str, eval=False ) -> List[str]:
     """Returns a list of content_ids for recommended content."""
 
     # Read parquet files
@@ -74,16 +74,24 @@ def recommend_content(adventurer_id : str) -> List[str]:
     adventurers = pd.read_parquet('./week2/adventurer_metadata.parquet')
 
     # cut out 20%
-    content_views_train = content_views.iloc[0:int((len(content_views)*0.8))]
-    content_views_test = content_views.drop(content_views_train.index)
+    if (eval):
+        content_views_train = content_views.iloc[0:int((len(content_views)*0.8))]
+        content_views_test = content_views.drop(content_views_train.index)
+    else:
+        content_views_train = content_views
+        content_views_test = None
+        
 
     # Add more columns (avg age and gender ratio)
-    views = content_views_train.merge(adventurers[['adventurer_id','age','gender']], on='adventurer_id', how='left')
+    views = content_views.merge(adventurers[['adventurer_id','age','gender','region']], on='adventurer_id', how='left')
+    
     demographics = views.groupby('content_id').agg(
         avg_age=('age','mean'),
-        gender_ratio=('gender', lambda x: ((x == 'M')*1 + (x == 'NB')*0.5).mean())
+        gender_ratio=('gender', lambda x: ((x == 'M')*1 + (x == 'NB')*0.5).mean()),
+        common_region=('region', lambda x: x.mode().iloc[0] if not x.mode().empty else None)
     ).reset_index()
-    content_metadata = pd.merge(content_metadata, demographics, on='content_id', how='left')
+
+    content_metadata = pd.merge(content_metadata, demographics, on='content_id', how='right').copy()
 
     # Get unseen content
     adventurer_views = content_views_train.loc[content_views_train['adventurer_id'] == adventurer_id]
@@ -103,16 +111,16 @@ def recommend_content(adventurer_id : str) -> List[str]:
     unseen_content = unseen_content[unseen_content['language_code'] == cur_adv.iloc[0]['primary_language']]
 
     # only allow things in 20%
-    content_views_test = content_views_test.loc[content_views_test['adventurer_id'] == adventurer_id]
-
-    #unseen_content = unseen_content.loc[unseen_content['content_id'].isin(content_views_test['content_id'])].copy()
-    content_views_test = content_views_test.merge(content_metadata, on=["content_id"], how="left")
-    unseen_content = content_views_test
+    if (eval):
+        content_views_test = content_views_test.loc[content_views_test['adventurer_id'] == adventurer_id]
+        content_views_test = content_views_test.merge(content_metadata, on=["content_id"], how="left")
+    
+        unseen_content = content_views_test
     
     
     # Categorical columns -> numerical columns
     numeric_features = ['avg_age','gender_ratio'] 
-    categorical_features = ['genre_id']
+    categorical_features = ['genre_id','common_region']
     
     encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
     encoder.fit(pd.concat([viewed_content[categorical_features], unseen_content[categorical_features]]).astype(str))
@@ -132,21 +140,32 @@ def recommend_content(adventurer_id : str) -> List[str]:
     top_indices = np.argsort(distances.mean(axis=1)) 
     recommended_content = unseen_content.iloc[top_indices]['content_id'].drop_duplicates().tolist()
 
-    return recommended_content[:2]
+    if (eval):
+        return recommended_content
+    else:
+        return recommended_content[:2]
+    
+    
 
 
 if __name__ == "__main__":
     adventurers = choose_nine_adventurers()
 
-    with open("./week2/eval.csv", "w") as f:
-        print("adventurer_id,rec1,rec2")
+    with open("./week2/test-eval.csv", "w") as f:
         f.write("adventurer_id,rec1,rec2\n")
         for adv in adventurers:
-            res = recommend_content(adv)
+            res = recommend_content(adv, True)
             new_str = adv + "," + ",".join(res)
             f.write(new_str + "\n")
-            print(new_str)
-            
+
+    with open("./week2/eval.csv", "w") as f:
+        f.write("adventurer_id,rec1,rec2\n")
+        for adv in adventurers:
+            res = recommend_content(adv, False)
+            new_str = adv + "," + ",".join(res)
+            f.write(new_str + "\n")
+    
+    print("Finished recommending!")
         
         
 
