@@ -1,3 +1,7 @@
+Hahns Pena - hpena02@calpoly.edu
+Ishwarya Namburu - inamburu@calpoly.edu
+Emanuel Gonzalez - egonz279@calpoly.edu
+
 **Hahns Evaluation:**
 ![Hahn's metrics](hahns_evaluation.png)
 
