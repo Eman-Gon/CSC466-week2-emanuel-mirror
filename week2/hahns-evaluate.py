@@ -15,7 +15,7 @@ def get_y(rows, threshold):
     y_actual = []
     y_pred = []
 
-    for i, row in enumerate(rows):
+    for _, row in enumerate(rows):
         adv = row[0]
         content = row[1:]
 
@@ -25,23 +25,17 @@ def get_y(rows, threshold):
         test_content = content_views_test.loc[content_views_test['adventurer_id'] == adv].merge(content_metadata, on="content_id", how="left")
 
         test_content['watch_percentage'] = (test_content['seconds_viewed'] / (test_content['minutes'] * 60)).clip(0,1)
-        
-        #print(test_content.sort_values(ascending=False,by='watch_percentage')[['content_id', 'genre_id','language_code','playlist_id','watch_percentage']])
+    
         test_content = test_content.drop_duplicates(subset="content_id", keep="first")
 
         # actual labels
         test_content['top_half_actual'] = 0
-        #n = int(len(test_content) * threshold)
         test_content.loc[test_content['watch_percentage'] >= 0.5,'top_half_actual'] = 1
 
         # predicted labels
         test_content['top_half_pred'] = 0
         top_half_rec_cont = content[:int(len(content) * threshold)]
         test_content.loc[test_content['content_id'].isin(top_half_rec_cont), 'top_half_pred'] = 1
-        #print(test_content)
-
-
-        #print(test_content[['content_id','watch_percentage','top_half_actual','top_half_pred']])
         
         y_actual += test_content['top_half_actual'].tolist()
         y_pred  += test_content['top_half_pred'].tolist()
@@ -59,22 +53,24 @@ def evaluate(path):
 
         rows = []
         for i, row in enumerate(csvreader):
-            #print(row)
             rows.append(row)
         
         test_thresholds = np.round(np.linspace(0.1, 0.9, 9), 2)
         
-        #print(test_thresholds)
         f1_scores = []
         optimized_threshold = -1
         for t in test_thresholds:
             _, _,f1 = get_y(rows, t)
             f1_scores.append(f1)
+            
+
         highest_f1 = max(f1_scores)
         optimized_threshold = test_thresholds[f1_scores.index(highest_f1)]
         print(f"Optimized threshold {optimized_threshold}: \tF1 Score: {highest_f1}")
 
         y_actual, y_pred, _ = get_y(rows, optimized_threshold)
+        print(y_actual, y_pred)
+        print(optimized_threshold)
 
         
         # -- ROC-AUC --
@@ -83,7 +79,7 @@ def evaluate(path):
         print(f"ROC-AUC = {roc_auc}")
 
         # -- PR-AUC --
-        precision, recall, thresholds = precision_recall_curve(y_actual, y_pred)
+        precision, recall, _ = precision_recall_curve(y_actual, y_pred)
         pr_auc = auc(recall, precision)
         print(f"PR-AUC = {pr_auc}")
 
@@ -119,14 +115,18 @@ def evaluate(path):
         plt.grid(True)
 
         plt.tight_layout()
+
+
+        plt.savefig(("week2/hahns_evaluation.png"))
         plt.show()
 
-        print()
+      
 
 
 
 if __name__ == "__main__":
     evaluate('week2/hahns-eval.csv')
+   
     
   
             
