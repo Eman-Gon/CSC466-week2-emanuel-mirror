@@ -159,4 +159,55 @@ plt.tight_layout()
 plt.savefig(P('eda_demographics.png'), dpi=300)
 print("Saved: eda_demographics.png")
 
-print("\nAll done!")
+# FIGURE 4: BIMODALITY ANALYSIS (THE SNAPCHAT MOMENT!)
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+fig.suptitle('⚠️ BIMODAL PATTERN DETECTED - Watch Percentage Analysis', 
+             fontsize=16, fontweight='bold', color='red')
+
+# 1. Histogram with clear bimodal peaks
+axes[0, 0].hist(df_merged['watch_pct'].dropna(), bins=100, edgecolor='black', alpha=0.7, color='steelblue')
+axes[0, 0].axvline(0.3, color='red', linestyle='--', linewidth=2, label='Low/High threshold')
+axes[0, 0].axvline(0.7, color='red', linestyle='--', linewidth=2)
+axes[0, 0].set_xlabel('Watch Percentage', fontsize=12)
+axes[0, 0].set_ylabel('Count', fontsize=12)
+axes[0, 0].set_title('Bimodal Distribution: Quick Bounces vs Full Engagement')
+axes[0, 0].legend()
+
+# 2. Box plot by deciles
+watch_deciles = pd.cut(df_merged['watch_pct'].dropna(), bins=10)
+decile_counts = watch_deciles.value_counts().sort_index()
+axes[0, 1].bar(range(len(decile_counts)), decile_counts.values, alpha=0.7, color='coral')
+axes[0, 1].set_xlabel('Watch % Decile')
+axes[0, 1].set_ylabel('Count')
+axes[0, 1].set_title('Extreme Values Dominate: 0-10% and 90-100%')
+axes[0, 1].set_xticks(range(len(decile_counts)))
+axes[0, 1].set_xticklabels(['0-10', '10-20', '20-30', '30-40', '40-50', 
+                             '50-60', '60-70', '70-80', '80-90', '90-100'], rotation=45)
+
+# 3. By genre (is bimodality genre-specific?)
+if 'genre_id' in df_merged.columns:
+    top_genres = df_merged['genre_id'].value_counts().head(5).index
+    genre_data = [df_merged[df_merged['genre_id'] == g]['watch_pct'].dropna() for g in top_genres]
+    axes[1, 0].boxplot(genre_data, labels=top_genres)
+    axes[1, 0].set_xlabel('Genre')
+    axes[1, 0].set_ylabel('Watch %')
+    axes[1, 0].set_title('Is Bimodality Genre-Specific?')
+    axes[1, 0].tick_params(axis='x', rotation=45)
+else:
+    axes[1, 0].text(0.5, 0.5, 'No genre data', ha='center', va='center')
+
+# 4. Cumulative distribution
+watch_sorted = np.sort(df_merged['watch_pct'].dropna())
+cumulative = np.arange(1, len(watch_sorted) + 1) / len(watch_sorted)
+axes[1, 1].plot(watch_sorted, cumulative, linewidth=2, color='darkgreen')
+axes[1, 1].axhline(0.645, color='red', linestyle='--', label='64.5% below 30%')
+axes[1, 1].axvline(0.3, color='red', linestyle='--')
+axes[1, 1].set_xlabel('Watch Percentage')
+axes[1, 1].set_ylabel('Cumulative Probability')
+axes[1, 1].set_title('64.5% of Views Have <30% Engagement')
+axes[1, 1].legend()
+axes[1, 1].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig(P('eda_bimodality.png'), dpi=300)
+print("Saved: eda_bimodality.png ⚠️  KEY FINDING!")

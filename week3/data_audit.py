@@ -77,4 +77,43 @@ if 'genre_id' in df_metadata.columns:
     for genre, count in df_metadata['genre_id'].value_counts().head(10).items():
         print(f"  {genre}: {count}")
 
-print("\nAUDIT COMPLETE")
+print("\n5. CONSTRAINT VIOLATIONS & SEMANTIC ISSUES")
+
+# Check: seconds_viewed should be <= content length
+over_length = (df_merged['seconds_viewed'] > df_merged['minutes'] * 60).sum()
+print(f"\nViews longer than content: {over_length:,}")
+if over_length > 0:
+    print("  ⚠️  Users watched more than content duration!")
+
+# Check: Temporal constraint - views should be after content creation
+MONTH_ORDER = ["Frostmere", "Emberfall", "Lunaris", "Verdantia", "Solstice",
+                "Duskveil", "Starshade", "Aurorath", "Mysthaven", "Eclipsion"]
+MONTH_TO_INDEX = {m: i for i, m in enumerate(MONTH_ORDER)}
+
+def to_ordinal(row):
+    month_idx = MONTH_TO_INDEX.get(row['month'], 0)
+    return row['year'] * 240 + month_idx * 24 + (row.get('day_of_month', 1) - 1)
+
+df_views['view_ordinal'] = df_views.apply(to_ordinal, axis=1)
+df_metadata['release_ordinal'] = df_metadata.apply(to_ordinal, axis=1)
+df_check = df_views.merge(df_metadata[['content_id', 'release_ordinal']], on='content_id', how='left')
+time_violations = (df_check['view_ordinal'] < df_check['release_ordinal']).sum()
+print(f"\nViews BEFORE content created: {time_violations:,}")
+if time_violations == 0:
+    print("  ✓ All temporal constraints satisfied")
+
+# Check: Age outliers (from the 9000+ year old dragons)
+if 'age' in df_adventurers.columns:
+    extreme_ages = (df_adventurers['age'] > 1000).sum()
+    print(f"\nAdventurers over 1000 years old: {extreme_ages:,}")
+    if extreme_ages > 0:
+        by_region = df_adventurers[df_adventurers['age'] > 1000].groupby('region')['age'].agg(['count', 'mean'])
+        print("  Distribution by region:")
+        print(by_region)
+
+# Semantic issue: IDs stored as strings but look numeric
+print(f"\nSemantic type checks:")
+print(f"  adventurer_id type: {df_adventurers['adventurer_id'].dtype}")
+print(f"  content_id type: {df_metadata['content_id'].dtype}")
+if df_adventurers['adventurer_id'].dtype == 'object':
+    print("  ⚠️  IDs are strings (correct for categorical data)")

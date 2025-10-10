@@ -123,3 +123,54 @@ print(
     )
 )
 print("COMPLETE - Ready for evaluation!")
+
+
+print("\n" + "="*60)
+print("RECOMMENDATION ANALYSIS")
+print("="*60)
+
+# Load recommendations
+recs_df = pd.read_csv(output_file)
+all_recs = []
+for col in recs_df.columns:
+    if col.startswith('rec'):
+        all_recs.extend(recs_df[col].dropna().unique())
+
+rec_content = df_metadata[df_metadata['content_id'].isin(all_recs)]
+
+print(f"\nTotal unique content recommended: {len(all_recs)}")
+print(f"Out of {len(df_metadata)} total content items ({len(all_recs)/len(df_metadata)*100:.1f}%)")
+
+if 'genre_id' in rec_content.columns:
+    print("\nGenre distribution in recommendations:")
+    rec_genres = rec_content['genre_id'].value_counts()
+    overall_genres = df_metadata['genre_id'].value_counts(normalize=True)
+    
+    for genre in rec_genres.head().index:
+        rec_pct = rec_genres[genre] / len(rec_content) * 100
+        overall_pct = overall_genres.get(genre, 0) * 100
+        bias = "OVER" if rec_pct > overall_pct * 1.2 else "UNDER" if rec_pct < overall_pct * 0.8 else "BALANCED"
+        print(f"  {genre}: {rec_pct:.1f}% (overall: {overall_pct:.1f}%) [{bias}]")
+
+if 'language_code' in rec_content.columns:
+    print("\nLanguage distribution in recommendations:")
+    rec_langs = rec_content['language_code'].value_counts()
+    overall_langs = df_metadata['language_code'].value_counts(normalize=True)
+    
+    for lang in rec_langs.index:
+        rec_pct = rec_langs[lang] / len(rec_content) * 100
+        overall_pct = overall_langs.get(lang, 0) * 100
+        bias = "OVER" if rec_pct > overall_pct * 1.2 else "UNDER" if rec_pct < overall_pct * 0.8 else "BALANCED"
+        print(f"  {lang}: {rec_pct:.1f}% (overall: {overall_pct:.1f}%) [{bias}]")
+
+# Check recommended users' characteristics
+rec_users = recs_df['adventurer_id'].unique()
+user_meta = pd.read_parquet(P("adventurer_metadata.parquet"))
+rec_user_info = user_meta[user_meta['adventurer_id'].isin(rec_users)]
+
+print(f"\nCharacteristics of recommended users:")
+print(f"  Age range: {rec_user_info['age'].min():.0f} - {rec_user_info['age'].max():.0f}")
+print(f"  Primary languages: {rec_user_info['primary_language'].value_counts().to_dict()}")
+print(f"  Top regions: {rec_user_info['region'].value_counts().head(3).to_dict()}")
+
+print("\n" + "="*60)

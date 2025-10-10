@@ -1,0 +1,102 @@
+WEEK 3: DATA QUALITY AUDIT
+
+Loading datasets...
+
+1. MISSING VALUES
+
+content_views:
+  Total rows: 237,667
+  - rating: 221,568 (93.2%)
+
+content_metadata:
+  Total rows: 982
+  No missing values
+
+adventurer_metadata:
+  Total rows: 25,770
+  No missing values
+
+subscriptions:
+  Total rows: 113,979
+  No missing values
+
+cancellations:
+  Total rows: 84,282
+  No missing values
+
+2. DUPLICATE RECORDS
+
+content_views: 0 duplicates (0.00%)
+  Duplicate (user, content) pairs: 9,399
+
+content_metadata: 0 duplicates (0.00%)
+
+adventurer_metadata: 0 duplicates (0.00%)
+
+subscriptions: 0 duplicates (0.00%)
+
+cancellations: 0 duplicates (0.00%)
+
+3. DATA RANGES & ANOMALIES
+
+Age:
+  Min: 10
+  Max: 9975
+  Mean: 389.9
+
+Watch Percentage:
+  Min: 0.00
+  Max: 1.00
+  Mean: 0.29
+  239 views with watch_pct > 100%
+
+Ratings:
+  Coverage: 16,099 / 237,667 (6.8%)
+
+4. CATEGORICAL DISTRIBUTIONS
+
+Gender: {'F': 12297, 'M': 12226, 'NB': 1247}
+
+Top 10 Genres:
+  HOR: 150
+  COM: 146
+  ROM: 145
+  DOC: 107
+  KID: 100
+  RLG: 91
+  HOL: 88
+  FNT: 78
+  ACT: 77
+
+5. CONSTRAINT VIOLATIONS & SEMANTIC ISSUES
+
+Views longer than content: 239
+  ⚠️  Users watched more than content duration!
+
+Views BEFORE content created: 0
+  ✓ All temporal constraints satisfied
+
+Adventurers over 1000 years old: 3,188
+  Distribution by region:
+                   count         mean
+region                               
+Dripwater Delta       65  2011.738462
+Duelburg             851  2484.674501
+Gelatina Grove         3  1310.000000
+Gnome's Rest          19  1664.526316
+Greycliffs            38  2268.552632
+Jamshire              30  2206.933333
+Knitwick              20  1942.500000
+Narathil             926  2419.749460
+Puddington            43  1979.000000
+Shield Barrow        929  2452.511302
+Slurpington           80  2275.237500
+Soggy Hollow          66  1999.984848
+Sugarbrook            35  2217.228571
+Threadbare            23  1713.173913
+Toadstool Marshes     60  2645.333333
+
+Semantic type checks:
+  adventurer_id type: object
+  content_id type: object
+  ⚠️  IDs are strings (correct for categorical data)
