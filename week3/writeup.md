@@ -15,19 +15,15 @@ I identified 9,399 duplicate (user, content) pairs where the same user watched t
 ### Data Anomalies
 
 The age range spans from 10 to 9,975 years with a mean of 390 years. There are 3,188 adventurers over 1,000 years old. These are valid outliers representing dragon-born from Honor's Coil kingdom who live thousands of years according to the world's lore.
-
 I found 239 views that exceed 100% watch percentage, meaning users supposedly watched more than the content's duration. These likely represent replays counted cumulatively. I kept these records (capped at 100%) because they signal high engagement.
 
 ### Constraint Violations
-
 All views occur after content creation dates, so there are no time-travel violations like the Uber example from lecture. However, 239 views exceed content duration, which I addressed by clipping watch_pct at 1.0.
 
 ### Class Imbalance
-
 Reptilian (RP) language dominates with 56% of views (132,989 views). Gender distribution is nearly balanced with Female at 47.7%, Male at 47.4%, and Non-binary at 4.8%.
 
-## Key Finding: Bimodal Engagement
-
+## insaneeeeeee Bimodal Engagement
 Following Professor Pierce's Snapchat flash/no-flash example, I discovered a severe bimodal distribution in watch percentages. 37.4% of views have 0-10% watch time (quick bounces), while 11.5% have 90-100% watch time (full engagement). Only 14.9% fall in the middle range of 30-70% watch time.
 
 Overall, 64.5% of views have less than 30% engagement, likely representing noise from accidental clicks and poor recommendations.
@@ -47,11 +43,8 @@ My hypothesis is that signal quality matters more than data quantity.
 ### Results Analysis
 
 I selected publisher wn32, which has 8,405 subscribers and is the largest publisher. I focused on the 10 most active power users. The model only recommends 69 out of 982 items, which is 7% content coverage.
-
 The genre distribution shows bias. Action is recommended at 18.5% but only represents 7.8% of the catalog, making it over-represented by 2.4x. Horror is recommended at 18.5% versus 15.3% in the catalog (1.2x over). Romance is balanced at 14.8% in both recommendations and catalog.
-
 The language bias is a critical issue. 100% of recommendations are Reptilian (RP) language, but RP only represents 22.2% of the catalog. All 10 selected users speak RP and live in Oozon continent regions like Slurpington, Dripwater Delta, and Soggy Hollow.
-
 The root cause is that my model learns publisher-specific patterns. Publisher wn32 serves an Oozon continent audience exclusively.
 
 ## Recommendation Strategy
@@ -60,29 +53,15 @@ I selected the 10 most active users to test whether filtering low-engagement vie
 
 ### What I Hope to Learn
 
-I want to answer four questions. First, does removing noise (45% of data) improve recommendations? Second, is 100% RP language targeting appropriate or is it over-fitting? Third, do power users actually prefer Action and Horror genres as the model suggests? Fourth, is 7% content coverage good because it focuses on popular items, or bad because it creates a filter bubble?
-
-My expected outcome is that if cleaning helps, users will accept recommendations at higher rates than Week 2. If not, language bias overwhelms the cleaning improvements and feature engineering will be needed.
+I want to answer four questions. First, does removing noise (45% of data) improve recommendations? Second, is 100% RP language targeting appropriate or is it over-fitting? Third, do power users actually prefer Action and Horror genres as the model suggests? Fourth, is 7% content coverage good because it focuses on popular items, or bad because it creates a filter bubble? My expected outcome is that if cleaning helps, users will accept recommendations at higher rates than Week 2. If not, language bias overwhelms the cleaning improvements and feature engineering will be needed.
 
 ## Individual Reflection
 
 
 My interpretation is that 100% RP recommendations occurred because I selected the largest publisher, whose audience happens to be RP speakers. Item-item collaborative filtering learned this specific audience's patterns.
-
-An alternative approach I considered was to filter recommendations to match each user's primary_language field, which would guarantee language-appropriate content.
-
-I chose not to implement language filtering because I wanted to test whether data cleaning alone improves recommendations without feature engineering. By keeping language unrestricted, I can measure the pure effect of my cleaning changes.
-
-The trade-off is that I risk poor recommendations due to language mismatch, but I gain a clear signal about what features matter most for Week 4 improvements. I decided to prioritize learning over short-term performance.
-
-
+An alternative approach I considered was to filter recommendations to match each user's primary_language field, which would guarantee language-appropriate content.I chose not to implement language filtering because I wanted to test whether data cleaning alone improves recommendations without feature engineering. By keeping language unrestricted, I can measure the pure effect of my cleaning changes.The trade-off is that I risk poor recommendations due to language mismatch, but I gain a clear signal about what features matter most for Week 4 improvements. I decided to prioritize learning over short-term performance.
 The issue is that 239 views exceed 100% watch time. My interpretation is that these represent replays counted cumulatively and serve as a high engagement signal.
-
-An alternative interpretation I considered is that these could be data corruption artifacts that should be removed entirely as invalid records.
-
-I decided to keep them (capped at 100%) because they represent only 0.1% of data, they signal super-fans who replay content, and clipping handles the constraint violation without discarding potentially valuable data.
-
-The broader lesson is that when uncertain about unusual data, I should preserve signal rather than discard data.
+An alternative interpretation I considered is that these could be data corruption artifacts that should be removed entirely as invalid records. I decided to keep them (capped at 100%) because they represent only 0.1% of data, they signal super-fans who replay content, and clipping handles the constraint violation without discarding potentially valuable data.The broader lesson is that when uncertain about unusual data, I should preserve signal rather than discard data.
 
 ## Visualizations
 
