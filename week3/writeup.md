@@ -2,158 +2,114 @@
 **Emanuel Gonzalez - egonz279@calpoly.edu**  
 **CSC-466 Fall 2025**
 
----
-
 ## Data Quality Audit
 
 ### Missing Values
-- **93.2% of views lack ratings** (221,568/237,667) - too sparse to use as feature
-- All other datasets complete
+
+93.2% of views lack ratings (221,568 out of 237,667 views), making ratings too sparse to use as a feature. All other datasets are complete with no missing values.
 
 ### Duplicates
-- **9,399 duplicate (user, content) pairs** - kept highest `seconds_viewed`
-- Prevents double-counting same viewing session
+
+I identified 9,399 duplicate (user, content) pairs where the same user watched the same content multiple times. I kept the record with the highest seconds_viewed to prevent double-counting the same viewing session.
 
 ### Data Anomalies
-**Age Range:** 10 to 9,975 years (mean: 390)
-- 3,188 adventurers over 1,000 years old
-- Valid outliers - dragon-born from Honor's Coil kingdom live thousands of years
 
-**Watch Percentage Issues:**
-- **239 views exceed 100%** (users watched more than content duration)
-- Likely replays counted cumulatively
-- Kept these (capped at 100%) as they signal high engagement
+The age range spans from 10 to 9,975 years with a mean of 390 years. There are 3,188 adventurers over 1,000 years old. These are valid outliers representing dragon-born from Honor's Coil kingdom who live thousands of years according to the world's lore.
+
+I found 239 views that exceed 100% watch percentage, meaning users supposedly watched more than the content's duration. These likely represent replays counted cumulatively. I kept these records (capped at 100%) because they signal high engagement.
 
 ### Constraint Violations
-✓ All views occur after content creation (no time-travel)  
-⚠️ 239 views exceed content duration (addressed by clipping)
+
+All views occur after content creation dates, so there are no time-travel violations like the Uber example from lecture. However, 239 views exceed content duration, which I addressed by clipping watch_pct at 1.0.
 
 ### Class Imbalance
-**Language:** RP dominates with 56% of views (132,989)  
-**Gender:** Balanced - F(47.7%), M(47.4%), NB(4.8%)
 
----
+Reptilian (RP) language dominates with 56% of views (132,989 views). Gender distribution is nearly balanced with Female at 47.7%, Male at 47.4%, and Non-binary at 4.8%.
 
 ## Key Finding: Bimodal Engagement
 
-Following Professor Pierce's Snapchat example, I found **severe bimodal distribution**:
+Following Professor Pierce's Snapchat flash/no-flash example, I discovered a severe bimodal distribution in watch percentages. 37.4% of views have 0-10% watch time (quick bounces), while 11.5% have 90-100% watch time (full engagement). Only 14.9% fall in the middle range of 30-70% watch time.
 
-- **0-10% watch**: 37.4% of views 👈 Quick bounces
-- **90-100% watch**: 11.5% of views 👈 Full engagement
-- **30-70% watch**: Only 14.9% (sparse middle)
-
-**64.5% of views have <30% engagement** - likely noise (accidental clicks, poor recommendations)
+Overall, 64.5% of views have less than 30% engagement, likely representing noise from accidental clicks and poor recommendations.
 
 ![Bimodal Pattern](eda_bimodality.png)
 
-**Impact:** Training on unfiltered data teaches model that low-quality matches are acceptable.
-
----
+The impact of this pattern is significant. Training on unfiltered data would teach the model that low-quality matches are acceptable.
 
 ## Recommender Improvements
 
 ### Changes Made
-1. **Removed 9,399 duplicates** - kept highest watch time
-2. **Filtered 103,069 low-engagement views** (45% of data) - removed views with <5% watch AND <30 seconds
-3. **Same algorithm** - item-item CF with cosine similarity
 
-**Hypothesis:** Signal quality > data quantity
+I made three changes to my recommender. First, I removed 9,399 duplicates and kept the record with the highest watch time. Second, I filtered out 103,069 low-engagement views (45% of the data) by removing views with less than 5% watch AND less than 30 seconds viewed. Third, I kept the same core algorithm, item-item collaborative filtering with cosine similarity, to allow direct comparison to Week 2.
+
+My hypothesis is that signal quality matters more than data quantity.
 
 ### Results Analysis
 
-**Publisher:** wn32 (8,405 subscribers - largest)  
-**Users:** 10 most active power users  
-**Content Coverage:** Only 69/982 items (7%) recommended
+I selected publisher wn32, which has 8,405 subscribers and is the largest publisher. I focused on the 10 most active power users. The model only recommends 69 out of 982 items, which is 7% content coverage.
 
-**Genre Bias:**
-| Genre | Recommended | Catalog | Status |
-|-------|------------|---------|--------|
-| ACT | 18.5% | 7.8% | OVER 2.4x |
-| HOR | 18.5% | 15.3% | OVER 1.2x |
-| ROM | 14.8% | 14.8% | BALANCED |
+The genre distribution shows bias. Action is recommended at 18.5% but only represents 7.8% of the catalog, making it over-represented by 2.4x. Horror is recommended at 18.5% versus 15.3% in the catalog (1.2x over). Romance is balanced at 14.8% in both recommendations and catalog.
 
-**Language Bias - CRITICAL ISSUE:**
-- **100% of recommendations are RP (Reptilian)** 
-- But RP is only 22.2% of catalog
-- All 10 users speak RP and live in Oozon continent
+The language bias is a critical issue. 100% of recommendations are Reptilian (RP) language, but RP only represents 22.2% of the catalog. All 10 selected users speak RP and live in Oozon continent regions like Slurpington, Dripwater Delta, and Soggy Hollow.
 
-**Root Cause:** Model learns publisher-specific patterns. Publisher wn32 serves Oozon continent audience exclusively.
-
----
+The root cause is that my model learns publisher-specific patterns. Publisher wn32 serves an Oozon continent audience exclusively.
 
 ## Recommendation Strategy
 
-**Selected 10 most active users** to test if filtering low-engagement views improves precision.
+I selected the 10 most active users to test whether filtering low-engagement views improves precision.
 
-### What I Hope to Learn:
-1. Does removing noise (45% of data) improve recommendations?
-2. Is 100% RP language targeting appropriate or over-fitting?
-3. Do power users prefer Action/Horror (as model suggests)?
-4. Is 7% content coverage good (popular items) or bad (filter bubble)?
+### What I Hope to Learn
 
-**Expected Outcome:**  
-If cleaning helps, users accept recommendations at higher rates. If not, language bias overwhelms improvements and feature engineering is needed.
+I want to answer four questions. First, does removing noise (45% of data) improve recommendations? Second, is 100% RP language targeting appropriate or is it over-fitting? Third, do power users actually prefer Action and Horror genres as the model suggests? Fourth, is 7% content coverage good because it focuses on popular items, or bad because it creates a filter bubble?
 
----
+My expected outcome is that if cleaning helps, users will accept recommendations at higher rates than Week 2. If not, language bias overwhelms the cleaning improvements and feature engineering will be needed.
 
 ## Individual Reflection
 
-### Alternative: Language Filtering
+### Alternative Approach: Language Filtering
 
-**My Interpretation:**  
-100% RP recommendations occurred because I selected the largest publisher, whose audience happens to be RP speakers. Item-item CF learned this audience's patterns.
+My interpretation is that 100% RP recommendations occurred because I selected the largest publisher, whose audience happens to be RP speakers. Item-item collaborative filtering learned this specific audience's patterns.
 
-**Alternative I Considered:**  
-Filter recommendations to match user's `primary_language` - would guarantee language-appropriate content.
+An alternative approach I considered was to filter recommendations to match each user's primary_language field, which would guarantee language-appropriate content.
 
-**Why I Didn't:**  
-Wanted to test if **data cleaning alone** improves recommendations without feature engineering. By keeping language unrestricted, I can measure pure effect of cleaning changes.
+I chose not to implement language filtering because I wanted to test whether data cleaning alone improves recommendations without feature engineering. By keeping language unrestricted, I can measure the pure effect of my cleaning changes.
 
-**Trade-off:**  
-- Risk: Poor recommendations due to language mismatch  
-- Benefit: Clear signal about what features matter for Week 4  
-- Decision: Prioritize learning over short-term performance
+The trade-off is that I risk poor recommendations due to language mismatch, but I gain a clear signal about what features matter most for Week 4 improvements. I decided to prioritize learning over short-term performance.
 
-### Alternative: Remove >100% Watch Records
+### Alternative Interpretation: Remove Views Over 100% Watch
 
-**The Issue:** 239 views exceed 100% watch time.
+The issue is that 239 views exceed 100% watch time. My interpretation is that these represent replays counted cumulatively and serve as a high engagement signal.
 
-**My Interpretation:** Replays counted cumulatively (high engagement signal)
+An alternative interpretation I considered is that these could be data corruption artifacts that should be removed entirely as invalid records.
 
-**Alternative:** Remove as data corruption
+I decided to keep them (capped at 100%) because they represent only 0.1% of data, they signal super-fans who replay content, and clipping handles the constraint violation without discarding potentially valuable data.
 
-**My Decision:** Kept them (capped at 100%) because:
-- Only 0.1% of data
-- Signals super-fans
-- Clipping handles constraint violation
-
-**Lesson:** When uncertain, preserve signal rather than discard data.
-
----
+The broader lesson is that when uncertain about unusual data, I should preserve signal rather than discard data.
 
 ## Visualizations
 
-![User Activity](eda_users.png)  
-*User engagement follows power-law distribution (mean 9.2 views/user)*
+![User Activity](eda_users.png)
 
-![Content Analysis](eda_content.png)  
-*Genre distribution balanced; RP language dominates views (56%)*
+User engagement follows a power-law distribution with a mean of 9.2 views per user.
 
-![Demographics](eda_demographics.png)  
-*Age skewed by dragon-born outliers; Honor's Coil dominates regions*
+![Content Analysis](eda_content.png)
 
----
+Genre distribution is balanced across content, but RP language dominates views at 56%.
+
+![Demographics](eda_demographics.png)
+
+Age distribution is right-skewed due to dragon-born outliers. Honor's Coil kingdom dominates the regional distribution.
 
 ## Conclusion
 
-**Key Findings:**
-1. Bimodal engagement (64.5% bounce rate) defines dataset
-2. Language bias (100% RP) reveals publisher-specific learning
-3. Removed 45% of data as noise - will validate if this helps
+### Key Findings
 
-**Next Steps:**
-- Add language filtering if recommendations fail
-- Incorporate content metadata and user demographics
-- Test if power user patterns generalize
+Three key findings emerged from this analysis. First, bimodal engagement with a 64.5% bounce rate defines the dataset. Second, language bias with 100% RP recommendations reveals that the model learns publisher-specific patterns rather than universal preferences. Third, I removed 45% of the data as noise and will validate whether this improves recommendations.
 
-**Limitations:** Single publisher, no content features, binary feedback only
+### Next Steps
+
+For Week 4, I will add language filtering if recommendations are rejected due to language mismatch. I will incorporate content metadata like genre and release date as features. I will consider user demographics including age, region, and favorite_genre. I will test whether power user patterns generalize to the broader population.
+
+### Limitations
+
+This analysis has several limitations. I only tested on a single publisher's audience, creating Oozon continent bias. My item-item collaborative filtering approach ignores content and user features. Binary implicit feedback loses information about engagement strength. The model does not capture temporal dynamics like trending content or seasonality.

@@ -6,14 +6,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-print("Generating visualizations...")
+print("Generating visualizations")
 
-# Load data
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_metadata = pd.read_parquet(P("content_metadata.parquet"))
 df_adventurers = pd.read_parquet(P("adventurer_metadata.parquet"))
 
-# Calculate watch percentage
 meta_cols = ['content_id', 'minutes']
 for col in ['genre_id', 'language_code']:
     if col in df_metadata.columns:
@@ -27,14 +25,12 @@ if 'minutes' in df_merged.columns:
 else:
     df_merged['watch_pct'] = np.nan
 
-# Add age (for Age vs Watch %) if available
 if 'adventurer_id' in df_views.columns and 'adventurer_id' in df_adventurers.columns:
     age_cols = ['adventurer_id']
     if 'age' in df_adventurers.columns:
         age_cols.append('age')
     df_merged = df_merged.merge(df_adventurers[age_cols], on='adventurer_id', how='left')
 
-# FIGURE 1: User Activity
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 fig.suptitle('User Activity Analysis', fontsize=16, fontweight='bold')
 
@@ -53,7 +49,7 @@ axes[0, 1].set_ylabel('Count')
 axes[0, 1].set_title(f'Content Diversity (Mean: {user_content.mean():.1f})')
 
 axes[1, 0].hist(df_merged['watch_pct'].dropna(), bins=50, edgecolor='black', alpha=0.7)
-axes[1, 0].set_xlabel('Watch Percentage')
+axes[1, 0].set_xlabel('Watch %')
 axes[1, 0].set_ylabel('Count')
 axes[1, 0].set_title(f'Watch % (Mean: {df_merged["watch_pct"].mean():.2f})')
 axes[1, 0].axvline(0.5, linestyle='--', label='50%')
@@ -70,9 +66,8 @@ else:
 
 plt.tight_layout()
 plt.savefig(P('eda_users.png'), dpi=300)
-print("Saved: eda_users.png")
+print("Saved eda_users.png")
 
-# FIGURE 2: Content Analysis
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 fig.suptitle('Content Analysis', fontsize=16, fontweight='bold')
 
@@ -111,9 +106,8 @@ else:
 
 plt.tight_layout()
 plt.savefig(P('eda_content.png'), dpi=300)
-print("Saved: eda_content.png")
+print("Saved eda_content.png")
 
-# FIGURE 3: Demographics
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 fig.suptitle('Demographics', fontsize=16, fontweight='bold')
 
@@ -148,8 +142,8 @@ if 'age' in df_merged.columns and 'watch_pct' in df_merged.columns:
     if not age_watch.empty:
         axes[1, 1].scatter(age_watch.index, age_watch.values, alpha=0.6)
         axes[1, 1].set_xlabel('Age')
-        axes[1, 1].set_ylabel('Avg Watch %')
-        axes[1, 1].set_title('Age vs Watch Percentage')
+        axes[1, 1].set_ylabel('Average Watch %')
+        axes[1, 1].set_title('Age vs Watch %')
     else:
         axes[1, 1].text(0.5, 0.5, 'No age/watch data', ha='center', va='center')
 else:
@@ -157,34 +151,29 @@ else:
 
 plt.tight_layout()
 plt.savefig(P('eda_demographics.png'), dpi=300)
-print("Saved: eda_demographics.png")
+print("Saved eda_demographics.png")
 
-# FIGURE 4: BIMODALITY ANALYSIS (THE SNAPCHAT MOMENT!)
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-fig.suptitle('⚠️ BIMODAL PATTERN DETECTED - Watch Percentage Analysis', 
-             fontsize=16, fontweight='bold', color='red')
+fig.suptitle('Bimodality Analysis - Watch %', fontsize=16, fontweight='bold')
 
-# 1. Histogram with clear bimodal peaks
-axes[0, 0].hist(df_merged['watch_pct'].dropna(), bins=100, edgecolor='black', alpha=0.7, color='steelblue')
-axes[0, 0].axvline(0.3, color='red', linestyle='--', linewidth=2, label='Low/High threshold')
-axes[0, 0].axvline(0.7, color='red', linestyle='--', linewidth=2)
-axes[0, 0].set_xlabel('Watch Percentage', fontsize=12)
-axes[0, 0].set_ylabel('Count', fontsize=12)
+axes[0, 0].hist(df_merged['watch_pct'].dropna(), bins=100, edgecolor='black', alpha=0.7)
+axes[0, 0].axvline(0.3, linestyle='--', linewidth=2, label='Low/High threshold')
+axes[0, 0].axvline(0.7, linestyle='--', linewidth=2)
+axes[0, 0].set_xlabel('Watch %')
+axes[0, 0].set_ylabel('Count')
 axes[0, 0].set_title('Bimodal Distribution: Quick Bounces vs Full Engagement')
 axes[0, 0].legend()
 
-# 2. Box plot by deciles
 watch_deciles = pd.cut(df_merged['watch_pct'].dropna(), bins=10)
 decile_counts = watch_deciles.value_counts().sort_index()
-axes[0, 1].bar(range(len(decile_counts)), decile_counts.values, alpha=0.7, color='coral')
+axes[0, 1].bar(range(len(decile_counts)), decile_counts.values, alpha=0.7)
 axes[0, 1].set_xlabel('Watch % Decile')
 axes[0, 1].set_ylabel('Count')
-axes[0, 1].set_title('Extreme Values Dominate: 0-10% and 90-100%')
+axes[0, 1].set_title('Extreme Values Dominate: 0–10% and 90–100%')
 axes[0, 1].set_xticks(range(len(decile_counts)))
-axes[0, 1].set_xticklabels(['0-10', '10-20', '20-30', '30-40', '40-50', 
-                             '50-60', '60-70', '70-80', '80-90', '90-100'], rotation=45)
+axes[0, 1].set_xticklabels(['0–10%', '10–20%', '20–30%', '30–40%', '40–50%', 
+                             '50–60%', '60–70%', '70–80%', '80–90%', '90–100%'], rotation=45)
 
-# 3. By genre (is bimodality genre-specific?)
 if 'genre_id' in df_merged.columns:
     top_genres = df_merged['genre_id'].value_counts().head(5).index
     genre_data = [df_merged[df_merged['genre_id'] == g]['watch_pct'].dropna() for g in top_genres]
@@ -196,13 +185,12 @@ if 'genre_id' in df_merged.columns:
 else:
     axes[1, 0].text(0.5, 0.5, 'No genre data', ha='center', va='center')
 
-# 4. Cumulative distribution
 watch_sorted = np.sort(df_merged['watch_pct'].dropna())
 cumulative = np.arange(1, len(watch_sorted) + 1) / len(watch_sorted)
-axes[1, 1].plot(watch_sorted, cumulative, linewidth=2, color='darkgreen')
-axes[1, 1].axhline(0.645, color='red', linestyle='--', label='64.5% below 30%')
-axes[1, 1].axvline(0.3, color='red', linestyle='--')
-axes[1, 1].set_xlabel('Watch Percentage')
+axes[1, 1].plot(watch_sorted, cumulative, linewidth=2)
+axes[1, 1].axhline(0.645, linestyle='--', label='64.5% below 30%')
+axes[1, 1].axvline(0.3, linestyle='--')
+axes[1, 1].set_xlabel('Watch %')
 axes[1, 1].set_ylabel('Cumulative Probability')
 axes[1, 1].set_title('64.5% of Views Have <30% Engagement')
 axes[1, 1].legend()
@@ -210,4 +198,4 @@ axes[1, 1].grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(P('eda_bimodality.png'), dpi=300)
-print("Saved: eda_bimodality.png ⚠️  KEY FINDING!")
+print("Saved eda_bimodality.png")
