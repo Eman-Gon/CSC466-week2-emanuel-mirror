@@ -66,7 +66,6 @@ My expected outcome is that if cleaning helps, users will accept recommendations
 
 ## Individual Reflection
 
-### Alternative Approach: Language Filtering
 
 My interpretation is that 100% RP recommendations occurred because I selected the largest publisher, whose audience happens to be RP speakers. Item-item collaborative filtering learned this specific audience's patterns.
 
@@ -76,7 +75,6 @@ I chose not to implement language filtering because I wanted to test whether dat
 
 The trade-off is that I risk poor recommendations due to language mismatch, but I gain a clear signal about what features matter most for Week 4 improvements. I decided to prioritize learning over short-term performance.
 
-### Alternative Interpretation: Remove Views Over 100% Watch
 
 The issue is that 239 views exceed 100% watch time. My interpretation is that these represent replays counted cumulatively and serve as a high engagement signal.
 
@@ -101,15 +99,6 @@ Genre distribution is balanced across content, but RP language dominates views a
 Age distribution is right-skewed due to dragon-born outliers. Honor's Coil kingdom dominates the regional distribution.
 
 ## Conclusion
-
-### Key Findings
-
 Three key findings emerged from this analysis. First, bimodal engagement with a 64.5% bounce rate defines the dataset. Second, language bias with 100% RP recommendations reveals that the model learns publisher-specific patterns rather than universal preferences. Third, I removed 45% of the data as noise and will validate whether this improves recommendations.
-
-### Next Steps
-
 For Week 4, I will add language filtering if recommendations are rejected due to language mismatch. I will incorporate content metadata like genre and release date as features. I will consider user demographics including age, region, and favorite_genre. I will test whether power user patterns generalize to the broader population.
-
-### Limitations
-
 This analysis has several limitations. I only tested on a single publisher's audience, creating Oozon continent bias. My item-item collaborative filtering approach ignores content and user features. Binary implicit feedback loses information about engagement strength. The model does not capture temporal dynamics like trending content or seasonality.
