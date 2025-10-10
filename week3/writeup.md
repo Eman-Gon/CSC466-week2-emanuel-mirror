@@ -2,26 +2,8 @@
 **Emanuel Gonzalez - egonz279@calpoly.edu**  
 **CSC-466 Fall 2025**
 
-## Data Quality Audit
-
-### Missing Values
-
-93.2% of views lack ratings (221,568 out of 237,667 views), making ratings too sparse to use as a feature. All other datasets are complete with no missing values.
-
-### Duplicates
-
-I identified 9,399 duplicate (user, content) pairs where the same user watched the same content multiple times. I kept the record with the highest seconds_viewed to prevent double-counting the same viewing session.
-
-### Data Anomalies
-
-The age range spans from 10 to 9,975 years with a mean of 390 years. There are 3,188 adventurers over 1,000 years old. These are valid outliers representing dragon-born from Honor's Coil kingdom who live thousands of years according to the world's lore.
-I found 239 views that exceed 100% watch percentage, meaning users supposedly watched more than the content's duration. These likely represent replays counted cumulatively. I kept these records (capped at 100%) because they signal high engagement.
-
-### Constraint Violations
-All views occur after content creation dates, so there are no time-travel violations like the Uber example from lecture. However, 239 views exceed content duration, which I addressed by clipping watch_pct at 1.0.
-
-### Class Imbalance
-Reptilian (RP) language dominates with 56% of views (132,989 views). Gender distribution is nearly balanced with Female at 47.7%, Male at 47.4%, and Non-binary at 4.8%.
+## Data Quality Audit 
+The data quality audit revealed that 93.2% of content views lack ratings (221,568 out of 237,667), making ratings too sparse to serve as a reliable feature, while all other datasets are complete with no missing values. I identified 9,399 duplicate (user, content) pairs where the same user viewed the same content multiple times; to ensure accuracy, I retained only the record with the highest seconds_viewed value. The age data ranges from 10 to 9,975 years with a mean of 390, including 3,188 adventurers over 1,000 years old, valid outliers representing dragon born adventurers from Honors Coil, consistent with the worlds lore. Additionally, 239 views exceed 100% watch percentage, likely due to replays being counted cumulatively; these records were capped at 100% to preserve engagement signals. All views occur after content creation dates, confirming there are no temporal inconsistencies, though the same 239 records technically violate content duration constraints. Finally, the dataset exhibits moderate class imbalance, with Reptilian (RP) as the dominant language (56% of views), while gender representation remains balanced across Female (47.7%), Male (47.4%), and Nonbinary (4.8%) users.
 
 ## insaneeeeeee Bimodal Engagement
 Following Professor Pierce's Snapchat flash/no-flash example, I discovered a severe bimodal distribution in watch percentages. 37.4% of views have 0-10% watch time (quick bounces), while 11.5% have 90-100% watch time (full engagement). Only 14.9% fall in the middle range of 30-70% watch time.
