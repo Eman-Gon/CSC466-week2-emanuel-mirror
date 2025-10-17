@@ -10,11 +10,7 @@ warnings.filterwarnings('ignore')
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-print("="*70)
-print("WEEK 4: FEATURE ENGINEERED RECOMMENDER")
-print("="*70)
 
-# Load data
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_metadata = pd.read_parquet(P("content_metadata.parquet"))
 df_adventurers = pd.read_parquet(P("adventurer_metadata.parquet"))
@@ -25,12 +21,10 @@ print(f"  Views: {len(df_views):,}")
 print(f"  Content: {len(df_metadata):,}")
 print(f"  Adventurers: {len(df_adventurers):,}")
 
-# Clean duplicates (keep highest watch time)
 df_views = df_views.sort_values('seconds_viewed', ascending=False)\
     .drop_duplicates(subset=['adventurer_id', 'content_id'], keep='first')
 
-# Get publisher_id from views (it's there, not in metadata)
-# Merge to get minutes from metadata
+
 df_merged = df_views.merge(
     df_metadata[['content_id', 'minutes']], 
     on='content_id', 
@@ -38,7 +32,7 @@ df_merged = df_views.merge(
 )
 df_merged['watch_pct'] = (df_merged['seconds_viewed'] / (df_merged['minutes'] * 60)).clip(0, 1)
 
-# Filter low engagement
+
 df_views_clean = df_merged[
     (df_merged['watch_pct'].fillna(0) >= 0.05) | 
     (df_merged['seconds_viewed'] >= 30)
@@ -46,17 +40,13 @@ df_views_clean = df_merged[
 
 print(f"After cleaning: {len(df_views_clean):,} views")
 
-# Select largest publisher (from subscriptions)
 pub_counts = df_subs.groupby("publisher_id")["adventurer_id"].nunique()
 publisher_id = pub_counts.idxmax()
 print(f"Selected publisher: {publisher_id} ({pub_counts.max():,} subscribers)")
 
-# Filter to publisher's subscribers
 subs_pub = df_subs[df_subs["publisher_id"] == publisher_id]
 sub_ids = set(subs_pub["adventurer_id"].unique())
 
-# Filter views to this publisher's content
-# Get content from this publisher
 publisher_content = df_subs[df_subs['publisher_id'] == publisher_id]['content_id'].unique() \
     if 'content_id' in df_subs.columns else df_views_clean['content_id'].unique()
 
@@ -69,14 +59,6 @@ print(f"  Views: {len(views_pub):,}")
 print(f"  Users: {views_pub['adventurer_id'].nunique():,}")
 print(f"  Content: {views_pub['content_id'].nunique():,}")
 
-# ============================================================================
-# FEATURE ENGINEERING
-# ============================================================================
-print("\n" + "="*70)
-print("FEATURE ENGINEERING")
-print("="*70)
-
-# Get content for this publisher
 content_items = df_metadata[
     df_metadata['content_id'].isin(views_pub['content_id'].unique())
 ].copy()
@@ -84,15 +66,13 @@ content_items = df_metadata[
 print(f"\nContent items: {len(content_items):,}")
 print(f"Available columns: {content_items.columns.tolist()}")
 
-# 1. NUMERICAL FEATURES: StandardScaler
-print("\n--- Numerical Features: Duration ---")
+
 scaler = StandardScaler()
 content_items['duration_scaled'] = scaler.fit_transform(content_items[['minutes']])
 print(f"Duration scaled: mean={content_items['duration_scaled'].mean():.2f}, "
       f"std={content_items['duration_scaled'].std():.2f}")
 
-# 2. CATEGORICAL FEATURES: One-hot encoding
-print("\n--- Categorical Features ---")
+
 genre_dummies = pd.DataFrame()
 if 'genre_id' in content_items.columns:
     genre_dummies = pd.get_dummies(content_items['genre_id'], prefix='genre')
@@ -103,8 +83,7 @@ if 'language_code' in content_items.columns:
     lang_dummies = pd.get_dummies(content_items['language_code'], prefix='lang')
     print(f"Language encoding: {len(lang_dummies.columns)} categories")
 
-# 3. TEXT FEATURES: TF-IDF on title + description
-print("\n--- Text Features: TF-IDF ---")
+
 tfidf_features = pd.DataFrame()
 if 'title' in content_items.columns and 'description' in content_items.columns:
     content_items['text_corpus'] = (
@@ -130,8 +109,6 @@ if 'title' in content_items.columns and 'description' in content_items.columns:
 else:
     print("No text columns available - skipping TF-IDF")
 
-# 4. COMBINE FEATURES
-print("\n--- Combining Features ---")
 feature_matrix = content_items[['content_id', 'duration_scaled']].set_index('content_id')
 
 if not genre_dummies.empty:
@@ -149,30 +126,20 @@ if not tfidf_features.empty:
 feature_matrix = feature_matrix.fillna(0)
 print(f"Final feature matrix: {feature_matrix.shape}")
 
-# ============================================================================
-# BUILD HYBRID RECOMMENDER
-# ============================================================================
-print("\n" + "="*70)
-print("HYBRID RECOMMENDER (Collaborative + Content)")
-print("="*70)
 
-# Weighted user-item matrix
 user_item = views_pub.groupby(['adventurer_id', 'content_id'])['watch_pct']\
     .max().unstack(fill_value=0).astype(np.float32)
 
-# Align with features
 common_items = user_item.columns.intersection(feature_matrix.index)
 feature_matrix = feature_matrix.loc[common_items]
 user_item = user_item[common_items]
 
 print(f"Aligned items: {len(common_items)}")
 
-# Compute similarity matrices
 print("Computing similarity matrices...")
 item_collab_sim = cosine_similarity(user_item.T.values)
 item_content_sim = cosine_similarity(feature_matrix.values)
 
-# Hybrid combination (60% collaborative, 40% content-based)
 ALPHA = 0.6
 BETA = 0.4
 item_hybrid_sim = ALPHA * item_collab_sim + BETA * item_content_sim
@@ -190,7 +157,6 @@ def recommend_hybrid(user_id, n_recs=10):
     if len(seen_idx) == 0:
         return []
     
-    # Score items using hybrid similarity
     user_weights = user_profile[seen_idx]
     scores = (item_hybrid_sim[seen_idx].T * user_weights).sum(axis=1)
     scores[seen_idx] = -np.inf
@@ -211,20 +177,11 @@ def recommend_baseline(user_id, n_recs=2):
     top_idx = np.argsort(-scores)[:n_recs]
     return [user_item.columns[i] for i in top_idx if np.isfinite(scores[i])]
 
-# ============================================================================
-# GENERATE EVALUATION FILES
-# ============================================================================
-print("\n" + "="*70)
-print("GENERATING EVALUATION FILES")
-print("="*70)
-
-# Select 9 active users
 user_activity = user_item.sum(axis=1).sort_values(ascending=False)
 eval_users = user_activity.index[:9].tolist()
 
 print(f"\nSelected {len(eval_users)} users")
 
-# Pre-eval (baseline)
 pre_eval = []
 for uid in eval_users:
     recs = recommend_baseline(uid, n_recs=2)
@@ -234,7 +191,6 @@ for uid in eval_users:
 pd.DataFrame(pre_eval).to_csv(P('pre_eval.csv'), index=False)
 print(f"✓ Saved pre_eval.csv ({len(pre_eval)} users)")
 
-# Post-eval (engineered)
 post_eval = []
 for uid in eval_users:
     recs = recommend_hybrid(uid, n_recs=2)
@@ -244,8 +200,6 @@ for uid in eval_users:
 pd.DataFrame(post_eval).to_csv(P('post_eval.csv'), index=False)
 print(f"✓ Saved post_eval.csv ({len(post_eval)} users)")
 
-print("\n" + "="*70)
 print("COMPLETE! Files generated:")
 print("  - pre_eval.csv")
 print("  - post_eval.csv")
-print("="*70)

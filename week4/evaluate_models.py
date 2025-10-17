@@ -5,18 +5,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-print("="*70)
 print("MODEL EVALUATION COMPARISON")
-print("="*70)
 
-# Load the recommendations
 pre_df = pd.read_csv(P('pre_eval.csv'))
 post_df = pd.read_csv(P('post_eval.csv'))
 
 print(f"\nPre-eval users: {len(pre_df)}")
 print(f"Post-eval users: {len(post_df)}")
 
-# Compare diversity
 def calc_diversity(df):
     all_recs = set()
     for col in ['rec1', 'rec2']:
@@ -32,7 +28,6 @@ print(f"Pre-eval unique items: {pre_diversity}")
 print(f"Post-eval unique items: {post_diversity}")
 print(f"Change: {post_diversity - pre_diversity:+d}")
 
-# Check overlap
 pre_set = set(zip(pre_df['adventurer_id'], pre_df['rec1'])) | \
           set(zip(pre_df['adventurer_id'], pre_df['rec2']))
 post_set = set(zip(post_df['adventurer_id'], post_df['rec1'])) | \
@@ -41,5 +36,3 @@ post_set = set(zip(post_df['adventurer_id'], post_df['rec1'])) | \
 overlap = len(pre_set & post_set)
 print(f"\n--- Overlap ---")
 print(f"Identical recommendations: {overlap}/{len(pre_set)} ({overlap/len(pre_set)*100:.1f}%)")
-
-print("\nReady for online evaluation!")

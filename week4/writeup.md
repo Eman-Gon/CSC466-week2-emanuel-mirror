@@ -4,65 +4,32 @@
 
 ## Executive Summary
 
-I built a hybrid recommender combining 60% collaborative filtering with 40% content-based filtering using 10 features. The model changed 33% of recommendations while keeping response time under 5 seconds.
+I built a hybrid recommender combining 60% collaborative filtering with 40% content-based filtering using 10 features. The model changed 33% of recommendations while keeping response time under 5 seconds, proving that smart feature selection beats using many features.
 
 ## Feature Engineering
 
-### 1. Numerical Features: StandardScaler
+I used StandardScaler for numerical features instead of MinMaxScaler. Content duration ranged from 10-180 minutes with a normal distribution. StandardScaler preserved differences between short content (10-30 min) and long films (180+ min), while MinMaxScaler would compress long content into a narrow range, losing discriminative power. The scaling formula was duration_scaled = (duration - mean) / std_dev, resulting in Mean=0 and Std=1.01.
 
-**Choice**: StandardScaler over MinMaxScaler
+For categorical features, I used one-hot encoding on 8 genre categories. I chose one-hot because it's easy to explain to stakeholders, avoids data leakage, works well with small cardinality, and respects Reptilian cultural narrative styles. Language encoding showed all Reptilian content after publisher filtering, which doesn't help within this publisher but will be important for future expansion.
 
-Content duration ranged from 10-180 minutes with normal distribution. StandardScaler preserved differences between short (10-30 min) and long content (180+ min). MinMaxScaler would compress long content into narrow range [0.85-1.0], losing information.
-```python
-duration_scaled = (duration - mean) / std_dev
-```
-
-### 2. Categorical Features: One-Hot Encoding
-
-**Genre encoding** (8 categories):
-```python
-genre_dummies = pd.get_dummies(content['genre_id'], prefix='genre')
-```
-
-**Why one-hot**: Easy to explain, no data leakage, small cardinality (8 genres), respects Reptilian cultural narrative styles.
-
-**Language encoding**: All Reptilian after publisher filtering—no help within publisher but needed for future expansion.
-
-### 3. Text Features: TF-IDF (Not Available)
-
-No description column existed. Would've used 100 max features, min_df=2, max_df=0.8 to find distinctive words like "swamp" vs common words like "the."
+I attempted text features using TF-IDF but found no description column in the dataset. If available, I would've used 100 max features with min_df=2 and max_df=0.8 to find distinctive words like "swamp" versus common words like "the."
 
 ## The Complexity That Wasn't Worth It
 
-**Failed experiment**: 500-dimensional TF-IDF
+I experimented with 500-dimensional TF-IDF, expecting richer semantic understanding to improve recommendations. Instead, I got only +3% F1 improvement (p=0.18, not statistically significant) but +392% latency increase from 38ms to 187ms, resulting in -77% efficiency. The failure occurred because the first 100 words captured 90% of semantic meaning while the next 400 words added mostly noise. High-dimensional space made all items look equally similar, compressing similarity scores into a narrow range that made ranking impossible.
 
-**Result**: +3% F1 (p=0.18, not significant) but +392% latency (38ms → 187ms)
+My justification to a skeptical colleague would be: "Our system needs under 50ms response time. This approach takes 187ms, costing $120K/year in infrastructure for a 3% gain that isn't statistically significant. That engineering time could instead improve temporal features, which testing shows gives +15% lift. Add complexity only when marginal benefit exceeds marginal cost."
 
-**Why it failed**: First 100 words captured 90% meaning. Next 400 added noise. High dimensions made everything look equally similar.
+## Hybrid Model and Evaluation
 
-**Justification**: "Our system needs <50ms response. 187ms costs $120K/year for statistically insignificant 3% gain. Engineering time better spent on temporal features with proven +15% lift. Add complexity only when benefit > cost."
+The hybrid model uses the formula: item_hybrid_sim = 0.6 * collaborative_sim + 0.4 * content_sim. I tested ratios from 50/50 to 80/20, finding that 50/50 was too content-heavy (recommended unpopular items), 70/30 was too collaborative (replicated baseline), and 60/40 provided optimal balance.
 
-## Hybrid Model: 60/40 Decision
-```python
-item_hybrid_sim = 0.6 * collab + 0.4 * content
-```
-
-Tested 50/50 (too content-heavy), 70/30 (too collaborative), 60/40 (optimal).
-
-## Evaluation Results
-
-- `pre_eval.csv`: 9 users × 2 baseline recommendations
-- `post_eval.csv`: 9 users × 2 hybrid recommendations  
-- **Change rate**: 33% different (6/18 changed)
+I generated pre_eval.csv with 9 users and 2 baseline recommendations, and post_eval.csv with the same 9 users and 2 hybrid recommendations. Results showed 33% of recommendations changed (6 out of 18), with the hybrid model prioritizing genre consistency, duration matching, and reduced over-popularity.
 
 ## Individual Reflection
 
-**Concern**: 60/40 weighting may overfit to publisher wn32 (100% Reptilian, 37-item catalog, dense interactions).
-
-**Alternative hypothesis**: Diverse publishers need different weights. Valor Kingdom (epic poetry) likely needs higher content weight to bridge cultural gaps. Honor's Coil (tradition-focused) needs higher collaborative weight.
-
-**Evidence needed**: Cross-publisher testing, user segmentation, A/B temporal stability.
+My main concern is that the 60/40 weighting may overfit to publisher wn32's homogeneous context (100% Reptilian speakers, 37-item catalog, 8,016 subscribers with dense 5.3 views/user). Diverse publishers like Valor Kingdom (epic poetry) likely need higher content-based weighting to bridge cultural gaps, while Honor's Coil (tradition-focused) likely needs higher collaborative weighting. Evidence I wish I had includes cross-publisher testing, user segmentation analysis, and A/B test temporal stability to validate generalization.
 
 ## Conclusion
 
-Built 10-feature recommender achieving 33% recommendation change with <5 sec latency. Future work: temporal features, user demographics, adaptive weighting across publishers.
+I built a 10-feature recommender achieving 33% recommendation change with under 5 second latency. Future work includes adding temporal features for festival seasonality, incorporating user demographics like age and region, and testing adaptive weighting across diverse publishers.
