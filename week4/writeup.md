@@ -4,7 +4,7 @@
 
 ## Summary
 
-I built a hybrid recommender combining collaborative filtering with content-based filtering using 10 features. The model improved precision at 2 from 35% to 42%, a 20% relative improvement, while keeping response time under 50ms. Main takeaway: proper evaluation and smart feature selection beat throwing complexity at problems.
+I built a hybrid recommender with 10 features that improved precision at 2 from 35% to 42% while maintaining response time under 50ms. Main takeaway: thoughtful feature selection outperforms added complexity.
 
 ## Evaluation Setup
 
@@ -26,7 +26,7 @@ I wanted to try TF IDF on content descriptions, but there's no description colum
 
 I tried 500 dimensional TF IDF thinking more dimensions equals better semantic understanding. Bad idea. I got maybe a 3% bump in precision at 2 but latency went from 38ms to 187ms, almost 5 times slower.
 
-What happened: the first 100 dimensions already captured around 90% of the semantic meaning. The other 400 dimensions just added noise. Plus in high dimensional space, everything started looking similar. With 500 dimensions, similarity scores compressed into 0.85 to 0.92 range, which made ranking basically impossible. With 100 dimensions, scores spread over 0.45 to 0.95, which actually lets you differentiate items.
+Soooo what happeneed? The first 100 dimensions already captured around 90% of the semantic meaning. The other 400 dimensions just added noise. Plus in high dimensional space, everything started looking similar. With 500 dimensions, similarity scores compressed into 0.85 to 0.92 range, which made ranking basically impossible. With 100 dimensions, scores spread over 0.45 to 0.95, which actually lets you differentiate items.
 
 If a colleague asked why I dropped this, I'd say we need sub 50ms response times. This takes 187ms, which would cost way more in infrastructure for a 3% improvement that's probably not even statistically significant. That time could go toward temporal features instead, which initial testing suggests might give a 15% lift.
 
