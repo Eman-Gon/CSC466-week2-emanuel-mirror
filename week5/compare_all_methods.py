@@ -12,6 +12,9 @@ P = lambda name: ROOT / name
 pre_eval = pd.read_csv(P('pre_eval.csv'))
 test_users = pre_eval['adventurer_id'].tolist()
 
+print(f"Generating recommendations for {len(test_users)} users...")
+print("="*60)
+
 # Generate recommendations from all 3 methods
 results = {
     'collaborative': [],
@@ -19,8 +22,11 @@ results = {
     'heuristic': []
 }
 
-print("Generating recommendations...")
-for user_id in test_users:
+error_counts = {'collaborative': 0, 'content_based': 0, 'heuristic': 0}
+
+for i, user_id in enumerate(test_users, 1):
+    print(f"\n[{i}/{len(test_users)}] User: {user_id}")
+    
     # Collaborative (your baseline)
     try:
         collab = recommend_baseline(user_id, n_recs=2)
@@ -29,7 +35,10 @@ for user_id in test_users:
             'rec1': collab[0] if len(collab) > 0 else None,
             'rec2': collab[1] if len(collab) > 1 else None
         })
-    except:
+        print(f"  ✓ Collaborative: {collab[:2]}")
+    except Exception as e:
+        print(f"  ✗ Collaborative error: {e}")
+        error_counts['collaborative'] += 1
         results['collaborative'].append({
             'adventurer_id': user_id, 'rec1': None, 'rec2': None
         })
@@ -43,7 +52,10 @@ for user_id in test_users:
             'rec1': content[0] if len(content) > 0 else None,
             'rec2': content[1] if len(content) > 1 else None
         })
-    except:
+        print(f"  ✓ Content-based: {content[:2]}")
+    except Exception as e:
+        print(f"  ✗ Content-based error: {e}")
+        error_counts['content_based'] += 1
         results['content_based'].append({
             'adventurer_id': user_id, 'rec1': None, 'rec2': None
         })
@@ -56,15 +68,33 @@ for user_id in test_users:
             'rec1': heur[0] if len(heur) > 0 else None,
             'rec2': heur[1] if len(heur) > 1 else None
         })
-    except:
+        print(f"  ✓ Heuristic: {heur[:2]}")
+    except Exception as e:
+        print(f"  ✗ Heuristic error: {e}")
+        error_counts['heuristic'] += 1
         results['heuristic'].append({
             'adventurer_id': user_id, 'rec1': None, 'rec2': None
         })
+
+print("\n" + "="*60)
+print("SUMMARY")
+print("="*60)
 
 # Save all three
 for method, data in results.items():
     df = pd.DataFrame(data)
     df.to_csv(P(f'{method}_eval.csv'), index=False)
-    print(f"✓ Saved {method}_eval.csv")
+    
+    # Count successful recommendations
+    success = df[['rec1', 'rec2']].notna().sum().sum()
+    total = len(df) * 2
+    
+    print(f"\n{method.upper()}:")
+    print(f"  ✓ Saved {method}_eval.csv")
+    print(f"  ✓ Successful: {success}/{total} recommendations ({success/total*100:.1f}%)")
+    if error_counts[method] > 0:
+        print(f"  ⚠️  Errors: {error_counts[method]} users")
 
-print("\nDone! Submit these to get feedback on which performs best.")
+print("\n" + "="*60)
+print("✅ Done! Now run: python evaluate_all_methods.py")
+print("="*60)
