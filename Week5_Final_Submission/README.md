@@ -1,34 +1,66 @@
-# Week 5 Final Submission - Recommendation Systems
+cat > Week5_Final_Submission/README.md << 'EOF'
+# Week 5: Recommendation Systems
 
-## Required Files
+Emanuel Gonzalez
 
-### 1. Three Recommender Systems
-- `recommender.py` - Collaborative filtering
-- `advanced_recommender_week5.py` - Content-based filtering
-- `heuristic_recommender.py` - Global heuristic (popularity)
+---
 
-### 2. Final Recommendations
-- `final_recommendations.csv` - 20 users with 2 recommendations each
+## Final Submission
 
-### 3. Report
-- `writeup.md` - 2-page report answering all reflection questions
+**Method:** Hybrid (60% Collaborative + 40% Content-Based)
+
+**Performance:**
+- 20/20 users successful
+- 19 unique items (50% coverage)
+- Similarity-based precision: 0.476
+
+**Rationale:** Hybrid recommends 19 unique items vs collaborative's 10 items and heuristic's 2 items, providing better diversity with minimal precision tradeoff.
+
+---
 
 ## How to Run
 ```bash
-python recommender.py                    # Collaborative
-python advanced_recommender_week5.py     # Content-based
-python heuristic_recommender.py          # Heuristic
-python evaluate_similarity_based.py      # Evaluation
+python generate_final_submission.py  # Creates final_recommendations.csv
+python evaluate_similarity_based.py  # Evaluates all methods
+python final_validation.py           # Validates submission
 ```
 
-## Results
+---
 
-| Method | Precision@2 |
-|--------|-------------|
-| Heuristic | 0.819 |
-| Collaborative | 0.569 |
-| Content-Based | 0.476 |
+## Results Summary
 
-Final submission uses hybrid approach (60% collaborative + 40% content-based).
+### Evaluation Set (9 users)
 
-See `writeup.md` for full analysis.
+| Method | Precision@2 | Unique Items | Coverage |
+|--------|-------------|--------------|----------|
+| Heuristic | 0.819 | 2 | 5% |
+| Collaborative | 0.569 | 12 | 32% |
+| Hybrid | 0.476 | 11 | 29% |
+
+### Final Submission Set (20 users)
+
+| Method | Unique Items | Coverage |
+|--------|--------------|----------|
+| Hybrid | 19 | 50% |
+| Collaborative | 10 | 26% |
+| Heuristic | 2 | 5% |
+
+---
+
+## Key Files
+
+**Submission:**
+- final_recommendations.csv
+- writeup.md
+
+**Code:**
+- recommender.py (collaborative)
+- advanced_recommender_week5.py (content-based + hybrid)
+- heuristic_recommender.py (popularity)
+
+**Visualizations:**
+- method_comparison_real.png
+- user_segmentation_real.png
+- diversity_analysis_real.png
+- evaluation_comparison.png
+EOF

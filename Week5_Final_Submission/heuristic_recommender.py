@@ -29,7 +29,7 @@ print(f"Heuristic will ONLY recommend from these {len(PUBLISHER_CONTENT_SCOPE)} 
 
 # Create ordinal dates for temporal calculations
 MONTH_ORDER = ["Frostmere", "Emberfall", "Lunaris", "Verdantia", "Solstice",
-                "Duskveil", "Starshade", "Aurorath", "Mysthaven", "Eclipsion"]
+               "Duskveil", "Starshade", "Aurorath", "Mysthaven", "Eclipsion"]
 MONTH_TO_INDEX = {m: i for i, m in enumerate(MONTH_ORDER)}
 
 def to_ordinal(row):
@@ -49,47 +49,42 @@ def recommend_trending(user_id, n_recs=2):
     Global heuristic: time-decayed popularity by language
     SCOPED TO PUBLISHER'S CONTENT ONLY
     """
-    
-    # Get user's language (default to most common language if not found)
+    # Get user's language (default to None if not found)
     user_lang = None
-    if user_id in df_adventurers['adventurer_id'].values:
+    if user_id in set(df_adventurers['adventurer_id'].values):
         user_lang = df_adventurers.loc[
-            df_adventurers['adventurer_id']==user_id, 
-            'primary_language'
+            df_adventurers['adventurer_id'] == user_id, 'primary_language'
         ].iloc[0]
-    
+
     # Recent views (last 60 days) - ONLY from publisher's content
     recent_cutoff = views_pub_df['view_ordinal'].max() - 60
     recent = views_pub_df[
         (views_pub_df['view_ordinal'] > recent_cutoff) &
-        (views_pub_df['content_id'].isin(PUBLISHER_CONTENT_SCOPE))  # CRITICAL FIX
+        (views_pub_df['content_id'].isin(PUBLISHER_CONTENT_SCOPE))
     ]
-    
+
     # If too few recent views, expand window
     if len(recent) < 100:
         recent_cutoff = views_pub_df['view_ordinal'].max() - 120
         recent = views_pub_df[
             (views_pub_df['view_ordinal'] > recent_cutoff) &
-            (views_pub_df['content_id'].isin(PUBLISHER_CONTENT_SCOPE))  # CRITICAL FIX
+            (views_pub_df['content_id'].isin(PUBLISHER_CONTENT_SCOPE))
         ]
-    
+
     # Filter by language if we know user's language
     if user_lang is not None:
         recent_meta = recent.merge(
-            df_metadata[['content_id', 'language_code']], 
+            df_metadata[['content_id', 'language_code']],
             on='content_id',
             how='left'
         )
         recent_lang = recent_meta[recent_meta['language_code'] == user_lang]
-        
-        # If we have content in user's language, use it
         if len(recent_lang) > 0:
             recent = recent_lang
-        # Otherwise, use all recent content (already scoped to publisher)
-    
+
     # Count views as popularity score
     trending = recent['content_id'].value_counts()
-    
+
     # Return top N (already guaranteed to be in scope)
     if len(trending) >= n_recs:
         return trending.head(n_recs).index.tolist()
@@ -98,7 +93,7 @@ def recommend_trending(user_id, n_recs=2):
         overall_popular = views_pub_df[
             views_pub_df['content_id'].isin(PUBLISHER_CONTENT_SCOPE)
         ]['content_id'].value_counts()
-        
+
         if len(overall_popular) >= n_recs:
             return overall_popular.head(n_recs).index.tolist()
         else:
@@ -109,19 +104,17 @@ def recommend_trending(user_id, n_recs=2):
 if __name__ == "__main__":
     print("\nTesting trending recommender...")
     test_users = ['4uds', '4jyy', '52st', 'tegt', 'do8o']
-    
+
     for uid in test_users:
         try:
             recs = recommend_trending(uid, n_recs=2)
             print(f"{uid}: {recs}")
-            
             # Verify recommendations are in scope
             for rec in recs:
                 if rec not in PUBLISHER_CONTENT_SCOPE:
-                    print(f"  ⚠️  WARNING: {rec} is NOT in publisher scope!")
-                    
+                    print(f"WARNING: {rec} is NOT in publisher scope!")
         except Exception as e:
             print(f"{uid}: Error - {e}")
-    
-    print("\n✓ Heuristic recommender working!")
-    print(f"✓ All recommendations scoped to {len(PUBLISHER_CONTENT_SCOPE)} items")
+
+    print("\nHeuristic recommender working.")
+    print(f"All recommendations scoped to {len(PUBLISHER_CONTENT_SCOPE)} items.")

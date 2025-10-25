@@ -66,8 +66,8 @@ for method_name, recommend_func in methods.items():
         'coverage': coverage
     }
     
-    print(f"  ✓ Success: {success}/{len(selected_users)} users")
-    print(f"  ✓ Unique items: {unique_items} ({coverage:.1f}% coverage)")
+    print(f"  Success: {success}/{len(selected_users)} users")
+    print(f"  Unique items: {unique_items} ({coverage:.1f}% coverage)")
     print()
 
 # Recommendation
@@ -77,21 +77,19 @@ print("="*60)
 
 best_method = max(results.items(), key=lambda x: (x[1]['success_rate'], x[1]['unique_items']))
 
-print(f"\n🏆 BEST METHOD: {best_method[0]}")
+print(f"\nBEST METHOD: {best_method[0]}")
 print(f"   - Success rate: {best_method[1]['success_rate']:.1%}")
 print(f"   - Diversity: {best_method[1]['unique_items']} unique items")
 print(f"   - Coverage: {best_method[1]['coverage']:.1f}%")
 
 if best_method[0] == 'Collaborative':
-    print("\n✅ Use pure COLLABORATIVE filtering")
+    print("\nUse pure COLLABORATIVE filtering")
     print("   Your 20 users are all highly active (good for collaborative)")
     
 elif best_method[0] == 'Heuristic':
-    print("\n⚠️  Heuristic won, but only recommends 2 items to everyone")
+    print("\nHeuristic won, but only recommends 2 items to everyone")
     print("   Consider using COLLABORATIVE for personalization")
     
 else:
-    print("\n✅ Use HYBRID (60% collaborative + 40% content)")
+    print("\nUse HYBRID (60% collaborative + 40% content)")
     print("   Best balance of accuracy and diversity")
-
-print("\n" + "="*60)
