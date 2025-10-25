@@ -6,22 +6,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-print("Running Improved KNN Recommender...")
 
-# ----------------------------
-# Load data
-# ----------------------------
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_subs = pd.read_parquet(P("subscriptions.parquet"))
 df_metadata = pd.read_parquet(P("content_metadata.parquet"))
-
-# Normalize content_id dtype across frames (prevents merge/isin mismatches)
 cid_dtype = df_metadata["content_id"].dtype
 df_views["content_id"] = df_views["content_id"].astype(cid_dtype, copy=False)
 
-# ----------------------------
-# De-dup + engagement filter
-# ----------------------------
 dup_count = df_views.duplicated(subset=["adventurer_id", "content_id"]).sum()
 df_views = (
     df_views.sort_values("seconds_viewed", ascending=False)
@@ -42,9 +33,6 @@ low_engagement = ((df_merged["watch_pct"] < 0.05) & (df_merged["seconds_viewed"]
 df_views_clean = df_merged[(df_merged["watch_pct"].fillna(0) >= 0.05) | (df_merged["seconds_viewed"] >= 30)].copy()
 print(f"Removed {low_engagement:,} low-engagement views")
 
-# ----------------------------
-# Choose publisher with most subs
-# ----------------------------
 pub_counts = df_subs.groupby("publisher_id")["adventurer_id"].nunique()
 publisher_id = pub_counts.idxmax()
 print(f"Selected publisher {publisher_id} ({pub_counts.max():,} subs)")
@@ -55,7 +43,6 @@ sub_ids = set(subs_pub["adventurer_id"].unique())
 if "publisher_id" not in df_views_clean.columns:
     if "publisher_id" not in df_metadata.columns:
         raise KeyError("publisher_id not found in content_metadata")
-    # If present (as we merged above), nothing to do
 
 views_pub = df_views_clean[
     (df_views_clean.get("publisher_id") == publisher_id)
@@ -63,9 +50,6 @@ views_pub = df_views_clean[
 ].copy()
 print(f"Scoped views: {len(views_pub):,}")
 
-# ----------------------------
-# Build implicit feedback matrix
-# ----------------------------
 views_pub["value"] = 1
 user_item = (
     views_pub.groupby(["adventurer_id", "content_id"])["value"]
@@ -77,9 +61,6 @@ user_item = (
 if user_item.shape[1] == 0:
     raise ValueError("No items available after filtering")
 
-# ----------------------------
-# Item-based KNN (cosine)
-# ----------------------------
 item_user = user_item.T
 n_neighbors = max(1, min(20, len(item_user)))
 knn = NearestNeighbors(metric="cosine", algorithm="brute", n_neighbors=n_neighbors)
@@ -97,14 +78,10 @@ def recommend_for_user(uid, n_recs=10):
     for drow, irow in zip(dists, idxs):
         sims = 1.0 - drow
         np.add.at(scores, irow, sims)
-    # Do not recommend items already seen
     scores[seen_idx] = -np.inf
     top_indices = np.argsort(-scores)[:n_recs]
     return [user_item.columns[i] for i in top_indices if np.isfinite(scores[i])]
 
-# ----------------------------
-# Generate recommendations
-# ----------------------------
 user_activity = user_item.sum(axis=1).sort_values(ascending=False)
 recommendations_list = []
 
@@ -123,8 +100,6 @@ if recommendations_list:
             for r in recommendations_list
         ]
     )
-    # Ensure content_id dtype consistency when writing/reading
-    # We'll keep them as strings when saving, then cast back to original dtype for analysis
     for i in range(10):
         col = f"rec{i+1}"
         out_df[col] = out_df[col].astype(str)
@@ -134,19 +109,14 @@ if recommendations_list:
 else:
     print("No users with 10+ recommendations; skipping file save.")
 
-# ----------------------------
-# Coverage / genre / language mix
-# ----------------------------
 if recommendations_list:
     recs_df = pd.read_csv(output_file)
 
-    # Collect unique recommended content_ids (cast back to original dtype)
     rec_set = set()
     for col in recs_df.columns:
         if col.startswith("rec"):
             rec_set.update(recs_df[col].dropna().tolist())
 
-    # Cast to original dtype (handles numeric ids correctly)
     if pd.api.types.is_integer_dtype(cid_dtype):
         rec_ids = pd.Series(list(rec_set), dtype="Int64").dropna().astype(cid_dtype).tolist()
     elif pd.api.types.is_numeric_dtype(cid_dtype):
@@ -164,7 +134,6 @@ if recommendations_list:
     if not rec_content.empty and "genre_id" in rec_content.columns:
         rec_genres = rec_content["genre_id"].value_counts()
         overall_genres = df_metadata["genre_id"].value_counts(normalize=True)
-        # Show up to 5 most common in recs
         for genre in rec_genres.head(5).index:
             rec_pct = rec_genres[genre] / len(rec_content) * 100
             overall_pct = overall_genres.get(genre, 0) * 100
@@ -178,9 +147,6 @@ if recommendations_list:
             overall_pct = overall_langs.get(lang, 0) * 100
             print(f"{lang}: {rec_pct:.1f}% vs {overall_pct:.1f}%")
 
-    # ------------------------
-    # User demographics summary
-    # ------------------------
     rec_users = recs_df["adventurer_id"].unique()
     user_meta = pd.read_parquet(P("adventurer_metadata.parquet"))
     rec_user_info = user_meta[user_meta["adventurer_id"].isin(rec_users)]

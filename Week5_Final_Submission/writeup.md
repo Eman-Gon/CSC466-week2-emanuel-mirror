@@ -1,4 +1,3 @@
-cat > Week5_Final_Submission/writeup.md << 'EOF'
 # Week 5: Recommendation System Comparison
 
 Emanuel Gonzalez
@@ -128,4 +127,3 @@ Heuristic wins on precision (0.82) but provides no personalization. Hybrid balan
 **Similarity-Based Precision:** Awards full credit for exact matches and partial credit (0.3-1.0) for similar items (cosine similarity > 0.3). My methods achieved 0.48-0.57, indicating they recommend new but relevant items.
 
 **Why not exact match?** Recommending already-watched items would yield 0% precision. The goal is discovering new items users will like.
-EOF

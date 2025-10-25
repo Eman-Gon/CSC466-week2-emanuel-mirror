@@ -1,4 +1,3 @@
-cat > Week5_Final_Submission/README.md << 'EOF'
 # Week 5: Recommendation Systems
 
 Emanuel Gonzalez
@@ -63,4 +62,3 @@ python final_validation.py           # Validates submission
 - user_segmentation_real.png
 - diversity_analysis_real.png
 - evaluation_comparison.png
-EOF
