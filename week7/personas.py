@@ -19,14 +19,9 @@ warnings.filterwarnings('ignore')
 ROOT = Path(__file__).resolve().parent
 P = lambda name: ROOT / name
 
-print("="*60)
-print("WEEK 7: USER PERSONA DISCOVERY")
-print("="*60)
 
-# ============================================
-# 1. LOAD DATA
-# ============================================
-print("\n[1] Loading data...")
+print("WEEK 7: USER PERSONA DISCOVERY")
+print("\n[1] Loading data")
 df_views = pd.read_parquet(P("content_views.parquet"))
 df_metadata = pd.read_parquet(P("content_metadata.parquet"))
 df_adventurers = pd.read_parquet(P("adventurer_metadata.parquet"))
@@ -41,10 +36,8 @@ print(f"    Cancellations: {len(df_cancels):,}")
 # Check what columns cancellations actually has
 print(f"    Cancellation columns: {df_cancels.columns.tolist()}")
 
-# ============================================
-# 2. CLEAN DATA
-# ============================================
-print("\n[2] Cleaning data...")
+
+print("\n[2] Cleaning data")
 
 # Remove duplicates
 df_views = df_views.sort_values('seconds_viewed', ascending=False)\
@@ -66,10 +59,7 @@ df_views_clean = df_merged[
 
 print(f"    Clean views: {len(df_views_clean):,}")
 
-# ============================================
-# 3. BUILD USER PROFILES
-# ============================================
-print("\n[3] Building user profiles...")
+print("\n[3] Building user profiles")
 
 # VIEWING BEHAVIOR
 viewing_features = df_views_clean.groupby('adventurer_id').agg({
@@ -120,10 +110,8 @@ user_profiles = user_profiles.fillna(0)
 print(f"    User profiles: {user_profiles.shape}")
 print(f"    Features: {user_profiles.columns.tolist()}")
 
-# ============================================
-# 4. PREPARE FOR CLUSTERING
-# ============================================
-print("\n[4] Preparing features for clustering...")
+
+print("\n[4] Preparing features for clustering")
 
 # Select features (behavioral only for clustering)
 clustering_features = [
@@ -147,11 +135,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 print(f"    Scaled features: mean=0, std=1")
-
-# ============================================
-# 5. FIND OPTIMAL K
-# ============================================
-print("\n[5] Finding optimal number of clusters...")
+print("\n[5] Finding optimal number of clusters")
 
 results = []
 K_range = range(3, 9)
@@ -190,17 +174,14 @@ ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(P('cluster_evaluation.png'), dpi=300, bbox_inches='tight')
-print(f"\n    ✓ Saved cluster_evaluation.png")
+print(f"\n    Saved cluster_evaluation.png")
 
 # Pick optimal k
 optimal_k = int(results_df.loc[results_df['silhouette'].idxmax(), 'k'])
 best_silhouette = results_df['silhouette'].max()
-print(f"\n    🎯 Optimal k: {optimal_k} (Silhouette: {best_silhouette:.3f})")
+print(f"\n     Optimal k: {optimal_k} (Silhouette: {best_silhouette:.3f})")
 
-# ============================================
-# 6. FINAL CLUSTERING
-# ============================================
-print(f"\n[6] Clustering with k={optimal_k}...")
+print(f"\n[6] Clustering with k={optimal_k}")
 
 kmeans_final = KMeans(n_clusters=optimal_k, random_state=42, n_init=20)
 user_profiles['cluster'] = kmeans_final.fit_predict(X_scaled)
@@ -211,10 +192,7 @@ for cluster_id in sorted(user_profiles['cluster'].unique()):
     pct = count / len(user_profiles) * 100
     print(f"      Cluster {cluster_id}: {count:,} users ({pct:.1f}%)")
 
-# ============================================
-# 7. DESCRIBE CLUSTERS
-# ============================================
-print("\n[7] Describing clusters...")
+print("\n[7] Describing clusters")
 
 # Add age back for description
 description_features = clustering_features + ['age']
@@ -223,14 +201,10 @@ cluster_summary = user_profiles.groupby('cluster')[description_features].agg(['m
 print("\n    Cluster Summary (mean values):")
 print(cluster_summary.xs('mean', level=1, axis=1).round(2))
 
-# Save detailed summary
 cluster_summary.to_csv(P('cluster_summary.csv'))
-print(f"\n    ✓ Saved cluster_summary.csv")
+print(f"\n    Saved cluster_summary.csv")
 
-# ============================================
-# 8. VISUALIZE WITH PCA
-# ============================================
-print("\n[8] Creating visualizations...")
+print("\n[8] Creating visualizations")
 
 # PCA for 2D visualization
 pca = PCA(n_components=2, random_state=42)
@@ -255,12 +229,9 @@ plt.colorbar(scatter, label='Cluster')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(P('cluster_visualization.png'), dpi=300, bbox_inches='tight')
-print(f"    ✓ Saved cluster_visualization.png")
+print(f"    Saved cluster_visualization.png")
 
-# ============================================
-# 9. PERSONA PROFILES
-# ============================================
-print("\n[9] Creating persona profiles...")
+print("\n[9] Creating persona profiles")
 
 # For each cluster, get typical characteristics
 persona_insights = []
@@ -280,25 +251,16 @@ for cluster_id in sorted(user_profiles['cluster'].unique()):
     persona_insights.append(insight)
 
 persona_df = pd.DataFrame(persona_insights)
-print("\n" + "="*60)
-print("PERSONA INSIGHTS")
-print("="*60)
 print(persona_df.round(2))
 
 persona_df.to_csv(P('persona_insights.csv'), index=False)
-print(f"\n✓ Saved persona_insights.csv")
+print(f"\nSaved persona_insights.csv")
 
-# ============================================
-# 10. SAVE RESULTS
-# ============================================
-print("\n[10] Saving results...")
+print("\n[10] Saving results")
 
 user_profiles.to_csv(P('user_profiles_with_clusters.csv'), index=False)
-print(f"    ✓ Saved user_profiles_with_clusters.csv")
+print(f"    Saved user_profiles_with_clusters.csv")
 
-print("\n" + "="*60)
-print("COMPLETE! 🎉")
-print("="*60)
 print("\nGenerated files:")
 print("  - cluster_evaluation.png")
 print("  - cluster_visualization.png")

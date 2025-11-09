@@ -105,7 +105,7 @@ user_profiles = user_profiles.fillna(0)
 print(f"    User profiles: {user_profiles.shape}")
 print(f"    Features: {user_profiles.columns.tolist()}")
 
-print("\n[4] Clustering...")
+print("\n[4] Clustering")
 
 clustering_features = [
     'total_watch_time',
@@ -220,7 +220,7 @@ for cluster_id in sorted(user_profiles['cluster'].unique()):
 persona_df = pd.DataFrame(persona_insights)
 print("PERSONA INSIGHTS")
 print(persona_df.round(2))
-print("\n[6] Creating visualizations...")
+print("\n[6] Creating visualizations")
 
 colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff']
 

@@ -18,9 +18,6 @@ P = lambda name: ROOT / name
 user_profiles = pd.read_csv(P('user_profiles_with_clusters.csv'))
 persona_insights = pd.read_csv(P('persona_insights.csv'))
 
-print("="*60)
-print("CREATING ENHANCED VISUALIZATIONS")
-print("="*60)
 
 # Set style
 sns.set_style('whitegrid')
@@ -30,10 +27,8 @@ plt.rcParams['figure.dpi'] = 300
 # Define colors for 7 clusters
 colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff']
 
-# ============================================
-# VIZ 1: Bar Chart Comparison (Like Ryan's)
-# ============================================
-print("\n[1] Creating bar chart comparisons...")
+
+print("\n[1] Creating bar chart comparisons")
 
 fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
@@ -103,13 +98,10 @@ for bar in bars4:
 
 plt.tight_layout()
 plt.savefig(P('persona_comparison_bars.png'), dpi=300, bbox_inches='tight')
-print("    ✓ Saved persona_comparison_bars.png")
+print("     Saved persona_comparison_bars.png")
 plt.close()
 
-# ============================================
-# VIZ 2: Cluster Size Pie Chart
-# ============================================
-print("\n[2] Creating cluster distribution pie chart...")
+print("\n[2] Creating cluster distribution pie chart")
 
 fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -127,13 +119,10 @@ wedges, texts, autotexts = ax.pie(sizes,
 
 ax.set_title('User Distribution Across Personas', fontsize=16, fontweight='bold', pad=20)
 plt.savefig(P('persona_distribution.png'), dpi=300, bbox_inches='tight')
-print("    ✓ Saved persona_distribution.png")
+print("     Saved persona_distribution.png")
 plt.close()
 
-# ============================================
-# VIZ 3: Heatmap
-# ============================================
-print("\n[3] Creating feature heatmap...")
+print("\n[3] Creating feature heatmap")
 
 fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -156,13 +145,10 @@ ax.set_yticklabels(['Avg Views', 'Completion', 'Churns', 'Subs', 'Age'], rotatio
 
 plt.tight_layout()
 plt.savefig(P('persona_heatmap.png'), dpi=300, bbox_inches='tight')
-print("    ✓ Saved persona_heatmap.png")
+print("     Saved persona_heatmap.png")
 plt.close()
 
-# ============================================
-# VIZ 4: Individual Persona Cards
-# ============================================
-print("\n[4] Creating individual persona cards...")
+print("\n[4] Creating individual persona cards")
 
 # Define persona names based on analysis
 persona_names = {
@@ -230,12 +216,9 @@ axes[7].axis('off')
 plt.suptitle('Adventurer Personas', fontsize=20, fontweight='bold', y=0.98)
 plt.tight_layout()
 plt.savefig(P('persona_cards.png'), dpi=300, bbox_inches='tight')
-print("    ✓ Saved persona_cards.png")
+print("     Saved persona_cards.png")
 plt.close()
 
-print("\n" + "="*60)
-print("VISUALIZATIONS COMPLETE! 🎉")
-print("="*60)
 print("\nGenerated files:")
 print("  - persona_comparison_bars.png")
 print("  - persona_distribution.png")
