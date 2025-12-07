@@ -14,7 +14,7 @@ Rather than clustering on hand-crafted behavioral features like completion rate 
 
 The lower silhouette compared to behavioral clustering (0.267 in typical approaches) is expected when clustering in high-dimensional latent space on complex taste patterns rather than simple engagement metrics. This approach separates clustering (based on what users watch) from interpretation (described by genre preferences not used in clustering).
 
-![User Personas UMAP](Screenshot 2025-11-28 at 12.13.39 PM.png)
+![User Personas UMAP](./Screenshot%202025-11-28%20at%2012.13.39%20PM.png)
 
 The UMAP visualization shows clear spatial separation between clusters, with Cluster 2 (Horror & Fantasy Niche) forming a distinct isolated group in the middle, while Clusters 0 and 5 group together in the lower left, and Clusters 1, 3, 4, and 6 overlap in the right region, reflecting their shared preferences for Kids and Romance content.
 
