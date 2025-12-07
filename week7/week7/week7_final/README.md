@@ -1,5 +1,5 @@
 # Week 7: User Personas via SVD-Based Clustering
-Steven Gonzalez
+Emanuel Gonzalez
 
 ## Submission Contents
 
