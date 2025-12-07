@@ -1,0 +1,2 @@
+optimal_k,silhouette_score,davies_bouldin_score,calinski_harabasz_score,n_users,n_content,n_latent_features,variance_explained,matrix_density
+7,0.07503638934397026,2.8471504216691974,118.25728732811308,3083,314,30,0.6411290983171656,0.040970516351225436
